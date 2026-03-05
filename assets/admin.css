@@ -1,0 +1,13 @@
+.mlf-fields-table td input[type="text"] {
+  width: 100%;
+}
+
+.mlf-fields-table th,
+.mlf-fields-table td {
+  vertical-align: top;
+}
+
+.mlf-fields-table td:last-child {
+  width: 90px;
+}
+

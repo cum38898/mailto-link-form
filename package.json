@@ -1,0 +1,14 @@
+{
+  "name": "mailto-link-form",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local development tooling for the mailto-link-form plugin",
+  "scripts": {
+    "dev:start": "node scripts/dev-start.mjs",
+    "dev:stop": "node scripts/dev-stop.mjs",
+    "dev:reset": "node scripts/dev-reset.mjs",
+    "release:zip": "node scripts/build-release.mjs",
+    "docker:logs": "docker logs -f wpmlf-wordpress",
+    "wp:cli": "docker run --rm --network wpmlf-net -e WORDPRESS_DB_HOST=wpmlf-db:3306 -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=wordpress -e WORDPRESS_DB_NAME=wordpress -v wpmlf-wp-data:/var/www/html wordpress:cli-php8.2 wp --info"
+  }
+}

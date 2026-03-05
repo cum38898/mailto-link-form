@@ -1,0 +1,9 @@
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+/AGENTS.md
+# wp-env
+.wp-env/
+wordpress/
+node_modules/
