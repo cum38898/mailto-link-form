@@ -8,10 +8,22 @@ final class MLF_Shortcode
     private const POST_TYPE = 'mailto_form';
     private const META_FIELDS_JSON = '_mlf_fields_json';
     private const META_SUBMIT_LABEL = '_mlf_submit_label';
+    private const META_HELP_TEXT = '_mlf_help_text';
 
     public function __construct()
     {
+        add_action('wp_enqueue_scripts', [$this, 'register_assets']);
         add_shortcode(self::SHORTCODE, [$this, 'render_shortcode']);
+    }
+
+    public function register_assets(): void
+    {
+        wp_register_style(
+            'mailto-link-form-frontend',
+            WP_MAILTO_LINK_FORM_PLUGIN_URL . 'assets/frontend.css',
+            [],
+            WP_MAILTO_LINK_FORM_VERSION
+        );
     }
 
     /**
@@ -19,6 +31,8 @@ final class MLF_Shortcode
      */
     public function render_shortcode(array $atts): string
     {
+        wp_enqueue_style('mailto-link-form-frontend');
+
         $atts = shortcode_atts(
             [
                 'id' => 0,
@@ -43,8 +57,15 @@ final class MLF_Shortcode
         }
         $submitLabel = (string) get_post_meta($formId, self::META_SUBMIT_LABEL, true);
         if ($submitLabel === '') {
-            $submitLabel = mailto_link_form_i18n('Send', '送信');
+            $submitLabel = mailto_link_form_i18n('Go to Compose', 'メール作成へ');
         }
+
+        $helpText = (string) get_post_meta($formId, self::META_HELP_TEXT, true);
+        if ($helpText === '') {
+            $helpText = mailto_link_form_i18n('Opening your email app.', 'メールアプリを開いています');
+        }
+
+        $noticeId = 'mlf-help-text-' . $formId;
 
         ob_start();
         ?>
@@ -73,10 +94,28 @@ final class MLF_Shortcode
                 </p>
             <?php endforeach; ?>
 
-            <p>
+            <p class="mlf-actions">
                 <button type="submit"><?php echo esc_html($submitLabel); ?></button>
             </p>
+            <p id="<?php echo esc_attr($noticeId); ?>" class="mlf-help-text is-hidden" aria-live="polite">
+                <?php echo esc_html($helpText); ?>
+            </p>
         </form>
+        <script>
+            (function () {
+                var form = document.currentScript ? document.currentScript.previousElementSibling : null;
+                if (!form || !form.classList || !form.classList.contains('mlf-frontend-form')) {
+                    return;
+                }
+                var help = form.querySelector('#<?php echo esc_js($noticeId); ?>');
+                if (!help) {
+                    return;
+                }
+                form.addEventListener('submit', function () {
+                    help.classList.remove('is-hidden');
+                });
+            }());
+        </script>
         <?php
 
         return (string) ob_get_clean();

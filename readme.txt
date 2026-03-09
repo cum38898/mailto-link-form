@@ -12,8 +12,16 @@ Build configurable forms that redirect to a mailto URL.
 
 == Description ==
 
-Create multiple mailto forms in wp-admin and embed each form via shortcode.
-Each field value is merged into a configurable body template using placeholders like {{field_key}}.
+Mailto Link Form lets you build contact forms that continue in the visitor's email app.
+
+Key features:
+* Create and manage multiple forms in wp-admin.
+* Configure To, Subject, and Body Template per form.
+* Map `<select>` values into body placeholders such as `{{your_field_key}}`.
+* Embed forms anywhere with a shortcode.
+
+This plugin does not send email directly from your server.
+It generates a `mailto:` URL and opens the user's default email app.
 
 == Installation ==
 
@@ -26,32 +34,22 @@ Each field value is merged into a configurable body template using placeholders 
 2. Configure recipient email, subject, body template, and select fields.
 3. Place shortcode like `[mailto_link_form id="123"]` into a page.
 
+== Screenshots ==
+
+1. Mailto Form edit screen (Form Settings and Mail Settings).
+2. Placeholder mapping in Body Template.
+3. Frontend form rendered from shortcode.
+
 == Frequently Asked Questions ==
 
 = Can this plugin send email directly? =
 
 No. This plugin builds a `mailto:` URL and opens the user's default mail client.
 
+= The email app did not open. What should I do? =
 
-== Development ==
-
-Local development uses plain Docker commands (no `wp-env` / `wp-playground-cli`).
-
-1. Make sure Docker Desktop is running.
-2. Install dependencies: `npm install`
-3. Start local env: `npm run dev:start`
-4. Open site: `http://localhost:8888`
-5. Open wp-admin: `http://localhost:8888/wp-admin`
-6. Login:
-   - user: `admin`
-   - password: `password`
-7. Stop env: `npm run dev:stop`
-
-Useful commands:
-- `npm run docker:logs` to follow WordPress logs.
-- `npm run wp:cli` to verify WP-CLI with the same Docker network/volumes.
-- `npm run dev:reset` to remove DB/site volumes and start fresh.
-- `npm run release:zip` to build a distributable plugin zip in `dist/`.
+Check your default email app settings in your browser/OS.
+If needed, copy the form details and create the email manually.
 
 == Changelog ==
 

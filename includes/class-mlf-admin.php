@@ -10,6 +10,7 @@ final class MLF_Admin
     private const META_BODY_TEMPLATE = '_mlf_body_template';
     private const META_FIELDS_JSON = '_mlf_fields_json';
     private const META_SUBMIT_LABEL = '_mlf_submit_label';
+    private const META_HELP_TEXT = '_mlf_help_text';
     private const NOTICE_KEY = 'mlf_admin_error_';
 
     public function __construct()
@@ -17,8 +18,12 @@ final class MLF_Admin
         add_action('init', [$this, 'register_post_type']);
         add_action('add_meta_boxes', [$this, 'register_meta_boxes']);
         add_action('save_post_' . self::POST_TYPE, [$this, 'save_form']);
+        add_filter('wp_insert_post_data', [$this, 'force_publish_status'], 10, 2);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
         add_action('admin_notices', [$this, 'render_admin_notices']);
+        add_filter('manage_' . self::POST_TYPE . '_posts_columns', [$this, 'filter_list_columns']);
+        add_action('manage_' . self::POST_TYPE . '_posts_custom_column', [$this, 'render_list_column'], 10, 2);
+        add_filter('post_row_actions', [$this, 'filter_row_actions'], 10, 2);
     }
 
     public function register_post_type(): void
@@ -56,6 +61,15 @@ final class MLF_Admin
         );
 
         add_meta_box(
+            'mlf_mail_settings',
+            mailto_link_form_i18n('Mail Settings', 'メール設定'),
+            [$this, 'render_mail_settings_metabox'],
+            self::POST_TYPE,
+            'normal',
+            'default'
+        );
+
+        add_meta_box(
             'mlf_form_shortcode',
             mailto_link_form_i18n('Shortcode', 'ショートコード'),
             [$this, 'render_shortcode_metabox'],
@@ -90,16 +104,119 @@ final class MLF_Admin
             WP_MAILTO_LINK_FORM_VERSION,
             true
         );
+
+        wp_add_inline_style(
+            'mlf-admin-style',
+            '
+            body.post-type-' . self::POST_TYPE . ' .misc-pub-post-status,
+            body.post-type-' . self::POST_TYPE . ' .misc-pub-visibility,
+            body.post-type-' . self::POST_TYPE . ' .misc-pub-curtime,
+            body.post-type-' . self::POST_TYPE . ' .edit-post-status,
+            body.post-type-' . self::POST_TYPE . ' .edit-visibility,
+            body.post-type-' . self::POST_TYPE . ' .edit-timestamp,
+            body.post-type-' . self::POST_TYPE . ' #post-status-select,
+            body.post-type-' . self::POST_TYPE . ' #visibility-select,
+            body.post-type-' . self::POST_TYPE . ' #timestampdiv {
+                display: none !important;
+            }'
+        );
     }
 
     public function render_form_settings_metabox(\WP_Post $post): void
     {
         wp_nonce_field('mlf_save_form_' . $post->ID, 'mlf_form_nonce');
 
+        $submitLabel = (string) get_post_meta($post->ID, self::META_SUBMIT_LABEL, true);
+        $helpText = (string) get_post_meta($post->ID, self::META_HELP_TEXT, true);
+        if ($submitLabel === '') {
+            $submitLabel = mailto_link_form_i18n('Go to Compose', 'メール作成へ');
+        }
+        if ($helpText === '') {
+            $helpText = mailto_link_form_i18n('Opening your email app.', 'メールアプリを開いています');
+        }
+        $fields = $this->get_fields($post->ID);
+
+        ?>
+        <p>
+            <label for="mlf_submit_label"><strong><?php echo esc_html(mailto_link_form_i18n('Submit Button Label', '送信ボタンラベル')); ?></strong></label><br />
+            <input type="text" id="mlf_submit_label" name="mlf_submit_label" class="widefat" value="<?php echo esc_attr($submitLabel); ?>" placeholder="<?php echo esc_attr(mailto_link_form_i18n('Go to Compose', 'メール作成へ')); ?>" />
+        </p>
+
+        <p>
+            <label for="mlf_help_text"><strong><?php echo esc_html(mailto_link_form_i18n('Button Help Text', 'ボタン下の案内文')); ?></strong></label><br />
+            <input type="text" id="mlf_help_text" name="mlf_help_text" class="widefat" value="<?php echo esc_attr($helpText); ?>" placeholder="<?php echo esc_attr(mailto_link_form_i18n('Opening your email app.', 'メールアプリを開いています')); ?>" />
+        </p>
+
+        <hr />
+        <p><strong><?php echo esc_html(mailto_link_form_i18n('<select> Fields', '<select>項目')); ?></strong></p>
+        <p>
+            <small><?php echo esc_html(mailto_link_form_i18n('Field Key maps to placeholders in Body Template.', 'フィールドキーは本文テンプレートのプレースホルダーに対応します。')); ?></small>
+        </p>
+        <?php
+        $labelFieldKey = mailto_link_form_i18n('Field Key', 'フィールドキー');
+        $labelLabel = mailto_link_form_i18n('Label', 'ラベル');
+        $labelOptions = mailto_link_form_i18n('Options (comma-separated)', '選択肢（カンマ区切り）');
+        $labelPlaceholder = mailto_link_form_i18n('Placeholder', 'プレースホルダー');
+        $labelAction = mailto_link_form_i18n('Action', '操作');
+        ?>
+        <table class="widefat mlf-fields-table">
+            <thead>
+                <tr>
+                    <th><?php echo esc_html($labelFieldKey); ?></th>
+                    <th><?php echo esc_html($labelLabel); ?></th>
+                    <th><?php echo esc_html($labelOptions); ?></th>
+                    <th><?php echo esc_html($labelPlaceholder); ?></th>
+                    <th><?php echo esc_html($labelAction); ?></th>
+                </tr>
+            </thead>
+            <tbody id="mlf-fields-body">
+            <?php if (!empty($fields)) : ?>
+                <?php foreach ($fields as $field) : ?>
+                    <tr class="mlf-field-row">
+                        <td data-label="<?php echo esc_attr($labelFieldKey); ?>"><input type="text" name="mlf_field_key[]" class="mlf-field-key" value="<?php echo esc_attr((string) $field['key']); ?>" /></td>
+                        <td data-label="<?php echo esc_attr($labelLabel); ?>"><input type="text" name="mlf_field_label[]" value="<?php echo esc_attr((string) $field['label']); ?>" /></td>
+                        <td data-label="<?php echo esc_attr($labelOptions); ?>"><input type="text" name="mlf_field_options[]" value="<?php echo esc_attr(implode(', ', (array) $field['options'])); ?>" /></td>
+                        <td class="mlf-placeholder-cell" data-label="<?php echo esc_attr($labelPlaceholder); ?>">
+                            <input type="text" class="mlf-placeholder-value" readonly value="<?php echo esc_attr('{{' . (string) $field['key'] . '}}'); ?>" onclick="this.select();" />
+                        </td>
+                        <td data-label="<?php echo esc_attr($labelAction); ?>"><button type="button" class="button button-secondary mlf-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else : ?>
+                <tr class="mlf-field-row">
+                    <td data-label="<?php echo esc_attr($labelFieldKey); ?>"><input type="text" name="mlf_field_key[]" class="mlf-field-key" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) your_field_key', '（例）your_field_key')); ?>" /></td>
+                    <td data-label="<?php echo esc_attr($labelLabel); ?>"><input type="text" name="mlf_field_label[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別')); ?>" /></td>
+                    <td data-label="<?php echo esc_attr($labelOptions); ?>"><input type="text" name="mlf_field_options[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他')); ?>" /></td>
+                    <td class="mlf-placeholder-cell" data-label="<?php echo esc_attr($labelPlaceholder); ?>">
+                        <input type="text" class="mlf-placeholder-value" readonly value="" onclick="this.select();" />
+                    </td>
+                    <td data-label="<?php echo esc_attr($labelAction); ?>"><button type="button" class="button button-secondary mlf-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
+                </tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+        <p>
+            <button type="button" class="button button-primary" id="mlf-add-row"><?php echo esc_html(mailto_link_form_i18n('Add <select> Field', '<select>項目を追加')); ?></button>
+        </p>
+        <template id="mlf-row-template">
+            <tr class="mlf-field-row">
+                <td data-label="<?php echo esc_attr($labelFieldKey); ?>"><input type="text" name="mlf_field_key[]" class="mlf-field-key" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) your_field_key', '（例）your_field_key')); ?>" /></td>
+                <td data-label="<?php echo esc_attr($labelLabel); ?>"><input type="text" name="mlf_field_label[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別')); ?>" /></td>
+                <td data-label="<?php echo esc_attr($labelOptions); ?>"><input type="text" name="mlf_field_options[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他')); ?>" /></td>
+                <td class="mlf-placeholder-cell" data-label="<?php echo esc_attr($labelPlaceholder); ?>">
+                    <input type="text" class="mlf-placeholder-value" readonly value="" onclick="this.select();" />
+                </td>
+                <td data-label="<?php echo esc_attr($labelAction); ?>"><button type="button" class="button button-secondary mlf-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
+            </tr>
+        </template>
+        <?php
+    }
+
+    public function render_mail_settings_metabox(\WP_Post $post): void
+    {
         $recipient = (string) get_post_meta($post->ID, self::META_RECIPIENT, true);
         $subject = (string) get_post_meta($post->ID, self::META_SUBJECT, true);
         $bodyTemplate = (string) get_post_meta($post->ID, self::META_BODY_TEMPLATE, true);
-        $submitLabel = (string) get_post_meta($post->ID, self::META_SUBMIT_LABEL, true);
         $fields = $this->get_fields($post->ID);
 
         if ($bodyTemplate === '' && !empty($fields)) {
@@ -108,68 +225,20 @@ final class MLF_Admin
 
         ?>
         <p>
-            <label for="mlf_recipient_email"><strong><?php echo esc_html(mailto_link_form_i18n('Recipient Email', '送信先メールアドレス')); ?></strong></label><br />
+            <label for="mlf_recipient_email"><strong><?php echo esc_html(mailto_link_form_i18n('To', '送信先メールアドレス (To)')); ?></strong></label><br />
             <input type="email" id="mlf_recipient_email" name="mlf_recipient_email" class="widefat" value="<?php echo esc_attr($recipient); ?>" />
         </p>
 
         <p>
-            <label for="mlf_subject"><strong><?php echo esc_html(mailto_link_form_i18n('Subject', '件名')); ?></strong></label><br />
+            <label for="mlf_subject"><strong><?php echo esc_html(mailto_link_form_i18n('Subject', 'メール件名')); ?></strong></label><br />
             <input type="text" id="mlf_subject" name="mlf_subject" class="widefat" value="<?php echo esc_attr($subject); ?>" />
         </p>
 
         <p>
-            <label for="mlf_body_template"><strong><?php echo esc_html(mailto_link_form_i18n('Body Template', '本文テンプレート')); ?></strong></label><br />
-            <textarea id="mlf_body_template" name="mlf_body_template" rows="8" class="widefat"><?php echo esc_textarea($bodyTemplate); ?></textarea>
-            <small><?php echo esc_html(mailto_link_form_i18n('Use placeholders like {{contact_type}}.', '{{contact_type}} のようなプレースホルダーを使えます。')); ?></small>
+            <label for="mlf_body_template"><strong><?php echo esc_html(mailto_link_form_i18n('Body Template', 'メール本文テンプレート')); ?></strong></label><br />
+            <textarea id="mlf_body_template" name="mlf_body_template" rows="12" class="widefat"><?php echo esc_textarea($bodyTemplate); ?></textarea>
+            <small><?php echo esc_html(mailto_link_form_i18n('Use placeholders like {{...}}.', '{{...}} のようなプレースホルダーを使えます。')); ?></small>
         </p>
-
-        <p>
-            <label for="mlf_submit_label"><strong><?php echo esc_html(mailto_link_form_i18n('Submit Button Label', '送信ボタンラベル')); ?></strong></label><br />
-            <input type="text" id="mlf_submit_label" name="mlf_submit_label" class="widefat" value="<?php echo esc_attr($submitLabel); ?>" placeholder="<?php echo esc_attr(mailto_link_form_i18n('Send', '送信')); ?>" />
-        </p>
-
-        <hr />
-        <p><strong><?php echo esc_html(mailto_link_form_i18n('Select Fields', 'select項目')); ?></strong></p>
-        <table class="widefat mlf-fields-table">
-            <thead>
-                <tr>
-                    <th><?php echo esc_html(mailto_link_form_i18n('Field Key', 'フィールドキー')); ?></th>
-                    <th><?php echo esc_html(mailto_link_form_i18n('Label', 'ラベル')); ?></th>
-                    <th><?php echo esc_html(mailto_link_form_i18n('Options (comma-separated)', '選択肢（カンマ区切り）')); ?></th>
-                    <th><?php echo esc_html(mailto_link_form_i18n('Action', '操作')); ?></th>
-                </tr>
-            </thead>
-            <tbody id="mlf-fields-body">
-            <?php if (!empty($fields)) : ?>
-                <?php foreach ($fields as $field) : ?>
-                    <tr class="mlf-field-row">
-                        <td><input type="text" name="mlf_field_key[]" value="<?php echo esc_attr((string) $field['key']); ?>" /></td>
-                        <td><input type="text" name="mlf_field_label[]" value="<?php echo esc_attr((string) $field['label']); ?>" /></td>
-                        <td><input type="text" name="mlf_field_options[]" value="<?php echo esc_attr(implode(', ', (array) $field['options'])); ?>" /></td>
-                        <td><button type="button" class="button button-secondary mlf-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php else : ?>
-                <tr class="mlf-field-row">
-                    <td><input type="text" name="mlf_field_key[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) contact_type', '（例）contact_type')); ?>" /></td>
-                    <td><input type="text" name="mlf_field_label[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別')); ?>" /></td>
-                    <td><input type="text" name="mlf_field_options[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他')); ?>" /></td>
-                    <td><button type="button" class="button button-secondary mlf-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
-                </tr>
-            <?php endif; ?>
-            </tbody>
-        </table>
-        <p>
-            <button type="button" class="button button-primary" id="mlf-add-row"><?php echo esc_html(mailto_link_form_i18n('Add Select Field', 'select項目を追加')); ?></button>
-        </p>
-        <template id="mlf-row-template">
-            <tr class="mlf-field-row">
-                <td><input type="text" name="mlf_field_key[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) contact_type', '（例）contact_type')); ?>" /></td>
-                <td><input type="text" name="mlf_field_label[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別')); ?>" /></td>
-                <td><input type="text" name="mlf_field_options[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他')); ?>" /></td>
-                <td><button type="button" class="button button-secondary mlf-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
-            </tr>
-        </template>
         <?php
     }
 
@@ -182,7 +251,7 @@ final class MLF_Admin
 
         $shortcode = sprintf('[mailto_link_form id="%d"]', (int) $post->ID);
         ?>
-        <p><?php echo esc_html(mailto_link_form_i18n('Use this shortcode:', 'このショートコードを使ってください:')); ?></p>
+        <p><?php echo esc_html(mailto_link_form_i18n('Paste this shortcode where you want to show the form:', 'フォームを表示したい場所に、このショートコードを貼り付けてください:')); ?></p>
         <input type="text" class="widefat" readonly value="<?php echo esc_attr($shortcode); ?>" onclick="this.select();" />
         <?php
     }
@@ -206,6 +275,7 @@ final class MLF_Admin
         $subject = isset($_POST['mlf_subject']) ? sanitize_text_field(wp_unslash((string) $_POST['mlf_subject'])) : '';
         $bodyTemplate = isset($_POST['mlf_body_template']) ? sanitize_textarea_field(wp_unslash((string) $_POST['mlf_body_template'])) : '';
         $submitLabel = isset($_POST['mlf_submit_label']) ? sanitize_text_field(wp_unslash((string) $_POST['mlf_submit_label'])) : '';
+        $helpText = isset($_POST['mlf_help_text']) ? sanitize_text_field(wp_unslash((string) $_POST['mlf_help_text'])) : '';
 
         if ($recipient === '' || !is_email($recipient)) {
             $this->set_admin_error(mailto_link_form_i18n('Recipient email is required.', '送信先メールアドレスは必須です。'));
@@ -294,6 +364,7 @@ final class MLF_Admin
         update_post_meta($postId, self::META_SUBJECT, $subject);
         update_post_meta($postId, self::META_BODY_TEMPLATE, $bodyTemplate);
         update_post_meta($postId, self::META_SUBMIT_LABEL, $submitLabel);
+        update_post_meta($postId, self::META_HELP_TEXT, $helpText);
         update_post_meta(
             $postId,
             self::META_FIELDS_JSON,
@@ -324,6 +395,78 @@ final class MLF_Admin
             '<div class="notice notice-error"><p>%s</p></div>',
             esc_html((string) $message)
         );
+    }
+
+    /**
+     * @param array<string, string> $columns
+     * @return array<string, string>
+     */
+    public function filter_list_columns(array $columns): array
+    {
+        $updated = [];
+
+        foreach ($columns as $key => $label) {
+            $updated[$key] = $label;
+            if ($key === 'title') {
+                $updated['mlf_shortcode'] = mailto_link_form_i18n('Shortcode', 'ショートコード');
+            }
+        }
+
+        if (!isset($updated['mlf_shortcode'])) {
+            $updated['mlf_shortcode'] = mailto_link_form_i18n('Shortcode', 'ショートコード');
+        }
+
+        return $updated;
+    }
+
+    public function render_list_column(string $column, int $postId): void
+    {
+        if ($column !== 'mlf_shortcode') {
+            return;
+        }
+
+        $shortcode = sprintf('[mailto_link_form id="%d"]', $postId);
+        printf(
+            '<input type="text" class="widefat code" readonly value="%s" onclick="this.select();" />',
+            esc_attr($shortcode)
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $postarr
+     * @return array<string, mixed>
+     */
+    public function force_publish_status(array $data, array $postarr): array
+    {
+        if (($data['post_type'] ?? '') !== self::POST_TYPE) {
+            return $data;
+        }
+
+        $status = (string) ($data['post_status'] ?? '');
+        if ($status === 'trash' || $status === 'auto-draft') {
+            return $data;
+        }
+
+        $data['post_status'] = 'publish';
+        $data['post_password'] = '';
+
+        return $data;
+    }
+
+    /**
+     * @param array<string, string> $actions
+     * @return array<string, string>
+     */
+    public function filter_row_actions(array $actions, \WP_Post $post): array
+    {
+        if ($post->post_type !== self::POST_TYPE) {
+            return $actions;
+        }
+
+        unset($actions['inline hide-if-no-js'], $actions['inline'], $actions['view']);
+
+        return $actions;
     }
 
     /**
