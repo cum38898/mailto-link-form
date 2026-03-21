@@ -1,7 +1,7 @@
 {
   "name": "mailto-link-form",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local development tooling for the mailto-link-form plugin",
   "scripts": {
     "dev:start": "node scripts/dev-start.mjs",

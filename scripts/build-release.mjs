@@ -63,6 +63,9 @@ function copyReleaseFiles() {
   }
 
   rmSync(join(stageDir, 'assets', '.gitkeep'), { force: true });
+  rmSync(join(stageDir, 'assets', 'screenshot-1.png'), { force: true });
+  rmSync(join(stageDir, 'assets', 'screenshot-2.png'), { force: true });
+  rmSync(join(stageDir, 'assets', 'screenshot-3.png'), { force: true });
   rmSync(join(stageDir, 'includes', '.gitkeep'), { force: true });
   rmSync(join(stageDir, 'languages', '.gitkeep'), { force: true });
 }

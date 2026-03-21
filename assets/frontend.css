@@ -1,42 +1,42 @@
-.mlf-frontend-form {
+.malifo-frontend-form {
   max-width: 100%;
 }
 
-.mlf-frontend-form,
-.mlf-frontend-form select,
-.mlf-frontend-form button {
+.malifo-frontend-form,
+.malifo-frontend-form select,
+.malifo-frontend-form button {
   font: inherit;
   color: inherit;
 }
 
-.mlf-frontend-form .mlf-form-row,
-.mlf-frontend-form .mlf-actions,
-.mlf-frontend-form .mlf-help-text {
+.malifo-frontend-form .malifo-form-row,
+.malifo-frontend-form .malifo-actions,
+.malifo-frontend-form .malifo-help-text {
   margin: 0 0 0.75em;
 }
 
-.mlf-frontend-form select,
-.mlf-frontend-form button {
+.malifo-frontend-form select,
+.malifo-frontend-form button {
   display: block;
   width: min(100%, 34ch);
   box-sizing: border-box;
   margin-inline: auto;
 }
 
-.mlf-frontend-form select {
+.malifo-frontend-form select {
   min-height: 2.5em;
 }
 
-.mlf-frontend-form button {
+.malifo-frontend-form button {
   min-height: 2.5em;
   cursor: pointer;
 }
 
-.mlf-frontend-form .mlf-help-text {
+.malifo-frontend-form .malifo-help-text {
   font-size: 0.875em;
   text-align: center;
 }
 
-.mlf-frontend-form .mlf-help-text.is-hidden {
+.malifo-frontend-form .malifo-help-text.is-hidden {
   display: none;
 }

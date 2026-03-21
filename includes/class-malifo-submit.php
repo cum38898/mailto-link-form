@@ -2,13 +2,13 @@
 
 defined('ABSPATH') || exit;
 
-final class MLF_Submit
+final class MALIFO_Submit
 {
     private const POST_TYPE = 'mailto_form';
-    private const META_RECIPIENT = '_mlf_recipient_email';
-    private const META_SUBJECT = '_mlf_subject';
-    private const META_BODY_TEMPLATE = '_mlf_body_template';
-    private const META_FIELDS_JSON = '_mlf_fields_json';
+    private const META_RECIPIENT = '_malifo_recipient_email';
+    private const META_SUBJECT = '_malifo_subject';
+    private const META_BODY_TEMPLATE = '_malifo_body_template';
+    private const META_FIELDS_JSON = '_malifo_fields_json';
 
     public function __construct()
     {
@@ -25,8 +25,8 @@ final class MLF_Submit
             $this->redirect_with_error($redirectTo, 'invalid_form');
         }
 
-        $nonce = isset($_POST['mlf_nonce']) ? sanitize_text_field(wp_unslash((string) $_POST['mlf_nonce'])) : '';
-        if ($nonce === '' || !wp_verify_nonce($nonce, 'mlf_submit_' . $formId)) {
+        $nonce = isset($_POST['malifo_nonce']) ? sanitize_text_field(wp_unslash((string) $_POST['malifo_nonce'])) : '';
+        if ($nonce === '' || !wp_verify_nonce($nonce, 'malifo_submit_' . $formId)) {
             $this->redirect_with_error($redirectTo, 'invalid_nonce');
         }
 
@@ -52,7 +52,7 @@ final class MLF_Submit
                 continue;
             }
 
-            $inputName = 'mlf_field_' . $key;
+            $inputName = 'malifo_field_' . $key;
             $selected = isset($_POST[$inputName]) ? sanitize_text_field((string) wp_unslash($_POST[$inputName])) : '';
 
             if ($selected === '') {
@@ -110,8 +110,9 @@ final class MLF_Submit
 
     private function redirect_with_error(string $redirectTo, string $code): void
     {
-        $target = add_query_arg('mlf_error', $code, $redirectTo);
+        $target = add_query_arg('malifo_error', $code, $redirectTo);
         wp_safe_redirect($target);
         exit;
     }
+
 }

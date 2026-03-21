@@ -1,64 +1,64 @@
-.mlf-fields-table td input[type="text"] {
+.malifo-fields-table td input[type="text"] {
   width: 100%;
 }
 
-.mlf-fields-table th,
-.mlf-fields-table td {
+.malifo-fields-table th,
+.malifo-fields-table td {
   vertical-align: top;
 }
 
-.mlf-fields-table td:last-child {
+.malifo-fields-table td:last-child {
   width: 90px;
 }
 
-.mlf-fields-table .mlf-placeholder-cell {
+.malifo-fields-table .malifo-placeholder-cell {
   min-width: 220px;
 }
 
-.mlf-fields-table .mlf-placeholder-value {
+.malifo-fields-table .malifo-placeholder-value {
   margin-bottom: 0;
 }
 
 @media (max-width: 782px) {
-  .mlf-fields-table,
-  .mlf-fields-table tbody,
-  .mlf-fields-table tr,
-  .mlf-fields-table td {
+  .malifo-fields-table,
+  .malifo-fields-table tbody,
+  .malifo-fields-table tr,
+  .malifo-fields-table td {
     display: block;
     width: 100%;
   }
 
-  .mlf-fields-table thead {
+  .malifo-fields-table thead {
     display: none;
   }
 
-  .mlf-fields-table .mlf-field-row {
+  .malifo-fields-table .malifo-field-row {
     border-top: 1px solid #dcdcde;
     padding: 10px 0;
     margin: 0 10px;
     width: auto;
   }
 
-  .mlf-fields-table td {
+  .malifo-fields-table td {
     padding: 0 0 10px;
   }
 
-  .mlf-fields-table td::before {
+  .malifo-fields-table td::before {
     content: attr(data-label);
     display: block;
     font-weight: 600;
     margin-bottom: 4px;
   }
 
-  .mlf-fields-table td:last-child {
+  .malifo-fields-table td:last-child {
     width: 100%;
   }
 
-  .mlf-fields-table .mlf-placeholder-cell {
+  .malifo-fields-table .malifo-placeholder-cell {
     min-width: 0;
   }
 
-  .mlf-fields-table .mlf-remove-row {
+  .malifo-fields-table .malifo-remove-row {
     width: 100%;
   }
 }

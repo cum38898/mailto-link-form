@@ -13,8 +13,8 @@
       return;
     }
 
-    var keyInput = row.querySelector(".mlf-field-key");
-    var placeholderInput = row.querySelector(".mlf-placeholder-value");
+    var keyInput = row.querySelector(".malifo-field-key");
+    var placeholderInput = row.querySelector(".malifo-placeholder-value");
     if (!(keyInput instanceof HTMLInputElement) || !(placeholderInput instanceof HTMLInputElement)) {
       return;
     }
@@ -24,13 +24,13 @@
   }
 
   function updateAllPlaceholders(tbody) {
-    tbody.querySelectorAll(".mlf-field-row").forEach(updateRowPlaceholder);
+    tbody.querySelectorAll(".malifo-field-row").forEach(updateRowPlaceholder);
   }
 
   function init() {
-    var addButton = document.getElementById("mlf-add-row");
-    var tbody = document.getElementById("mlf-fields-body");
-    var template = document.getElementById("mlf-row-template");
+    var addButton = document.getElementById("malifo-add-row");
+    var tbody = document.getElementById("malifo-fields-body");
+    var template = document.getElementById("malifo-row-template");
 
     if (!addButton || !tbody || !template) {
       return;
@@ -41,7 +41,7 @@
     addButton.addEventListener("click", function () {
       var fragment = template.content.cloneNode(true);
       tbody.appendChild(fragment);
-      var rows = tbody.querySelectorAll(".mlf-field-row");
+      var rows = tbody.querySelectorAll(".malifo-field-row");
       if (rows.length > 0) {
         updateRowPlaceholder(rows[rows.length - 1]);
       }
@@ -49,10 +49,10 @@
 
     tbody.addEventListener("input", function (event) {
       var target = event.target;
-      if (!(target instanceof HTMLElement) || !target.classList.contains("mlf-field-key")) {
+      if (!(target instanceof HTMLElement) || !target.classList.contains("malifo-field-key")) {
         return;
       }
-      var row = target.closest(".mlf-field-row");
+      var row = target.closest(".malifo-field-row");
       updateRowPlaceholder(row);
     });
 
@@ -62,16 +62,16 @@
         return;
       }
 
-      if (!target.classList.contains("mlf-remove-row")) {
+      if (!target.classList.contains("malifo-remove-row")) {
         return;
       }
 
-      var row = target.closest(".mlf-field-row");
+      var row = target.closest(".malifo-field-row");
       if (!row) {
         return;
       }
 
-      var rows = tbody.querySelectorAll(".mlf-field-row");
+      var rows = tbody.querySelectorAll(".malifo-field-row");
       if (rows.length <= 1) {
         row.querySelectorAll("input[type='text']").forEach(function (input) {
           input.value = "";

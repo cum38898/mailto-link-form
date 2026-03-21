@@ -2,13 +2,13 @@
 
 defined('ABSPATH') || exit;
 
-final class MLF_Shortcode
+final class MALIFO_Shortcode
 {
     private const SHORTCODE = 'mailto_link_form';
     private const POST_TYPE = 'mailto_form';
-    private const META_FIELDS_JSON = '_mlf_fields_json';
-    private const META_SUBMIT_LABEL = '_mlf_submit_label';
-    private const META_HELP_TEXT = '_mlf_help_text';
+    private const META_FIELDS_JSON = '_malifo_fields_json';
+    private const META_SUBMIT_LABEL = '_malifo_submit_label';
+    private const META_HELP_TEXT = '_malifo_help_text';
 
     public function __construct()
     {
@@ -20,9 +20,9 @@ final class MLF_Shortcode
     {
         wp_register_style(
             'mailto-link-form-frontend',
-            WP_MAILTO_LINK_FORM_PLUGIN_URL . 'assets/frontend.css',
+            MALIFO_PLUGIN_URL . 'assets/frontend.css',
             [],
-            WP_MAILTO_LINK_FORM_VERSION
+            MALIFO_VERSION
         );
     }
 
@@ -65,15 +65,15 @@ final class MLF_Shortcode
             $helpText = mailto_link_form_i18n('Opening your email app.', 'メールアプリを開いています');
         }
 
-        $noticeId = 'mlf-help-text-' . $formId;
+        $noticeId = 'malifo-help-text-' . $formId;
 
         ob_start();
         ?>
-        <form class="mlf-frontend-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" target="_blank">
+        <form class="malifo-frontend-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" target="_blank">
             <input type="hidden" name="action" value="mailto_link_form_submit" />
             <input type="hidden" name="form_id" value="<?php echo esc_attr((string) $formId); ?>" />
             <input type="hidden" name="redirect_to" value="<?php echo esc_url((string) get_permalink()); ?>" />
-            <?php wp_nonce_field('mlf_submit_' . $formId, 'mlf_nonce'); ?>
+            <?php wp_nonce_field('malifo_submit_' . $formId, 'malifo_nonce'); ?>
 
             <?php foreach ($fields as $field) : ?>
                 <?php
@@ -84,8 +84,8 @@ final class MLF_Shortcode
                     continue;
                 }
                 ?>
-                <p class="mlf-form-row">
-                    <select id="<?php echo esc_attr('mlf_field_' . $key); ?>" name="<?php echo esc_attr('mlf_field_' . $key); ?>" required>
+                <p class="malifo-form-row">
+                    <select id="<?php echo esc_attr('malifo_field_' . $key); ?>" name="<?php echo esc_attr('malifo_field_' . $key); ?>" required>
                         <option value="" selected disabled><?php echo esc_html($label); ?></option>
                         <?php foreach ($options as $option) : ?>
                             <option value="<?php echo esc_attr((string) $option); ?>"><?php echo esc_html((string) $option); ?></option>
@@ -94,17 +94,17 @@ final class MLF_Shortcode
                 </p>
             <?php endforeach; ?>
 
-            <p class="mlf-actions">
+            <p class="malifo-actions">
                 <button type="submit"><?php echo esc_html($submitLabel); ?></button>
             </p>
-            <p id="<?php echo esc_attr($noticeId); ?>" class="mlf-help-text is-hidden" aria-live="polite">
+            <p id="<?php echo esc_attr($noticeId); ?>" class="malifo-help-text is-hidden" aria-live="polite">
                 <?php echo esc_html($helpText); ?>
             </p>
         </form>
         <script>
             (function () {
                 var form = document.currentScript ? document.currentScript.previousElementSibling : null;
-                if (!form || !form.classList || !form.classList.contains('mlf-frontend-form')) {
+                if (!form || !form.classList || !form.classList.contains('malifo-frontend-form')) {
                     return;
                 }
                 var help = form.querySelector('#<?php echo esc_js($noticeId); ?>');
