@@ -24,6 +24,13 @@ final class MALIFO_Shortcode
             [],
             MALIFO_VERSION
         );
+        wp_register_script(
+            'mailto-link-form-frontend',
+            MALIFO_PLUGIN_URL . 'assets/frontend.js',
+            [],
+            MALIFO_VERSION,
+            true
+        );
     }
 
     /**
@@ -32,6 +39,7 @@ final class MALIFO_Shortcode
     public function render_shortcode(array $atts): string
     {
         wp_enqueue_style('mailto-link-form-frontend');
+        wp_enqueue_script('mailto-link-form-frontend');
 
         $atts = shortcode_atts(
             [
@@ -65,8 +73,6 @@ final class MALIFO_Shortcode
             $helpText = mailto_link_form_i18n('Opening your email app.', 'メールアプリを開いています');
         }
 
-        $noticeId = 'malifo-help-text-' . $formId;
-
         ob_start();
         ?>
         <form class="malifo-frontend-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" target="_blank">
@@ -97,25 +103,10 @@ final class MALIFO_Shortcode
             <p class="malifo-actions">
                 <button type="submit"><?php echo esc_html($submitLabel); ?></button>
             </p>
-            <p id="<?php echo esc_attr($noticeId); ?>" class="malifo-help-text is-hidden" aria-live="polite">
+            <p class="malifo-help-text is-hidden" aria-live="polite">
                 <?php echo esc_html($helpText); ?>
             </p>
         </form>
-        <script>
-            (function () {
-                var form = document.currentScript ? document.currentScript.previousElementSibling : null;
-                if (!form || !form.classList || !form.classList.contains('malifo-frontend-form')) {
-                    return;
-                }
-                var help = form.querySelector('#<?php echo esc_js($noticeId); ?>');
-                if (!help) {
-                    return;
-                }
-                form.addEventListener('submit', function () {
-                    help.classList.remove('is-hidden');
-                });
-            }());
-        </script>
         <?php
 
         return (string) ob_get_clean();
