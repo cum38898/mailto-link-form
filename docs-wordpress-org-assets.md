@@ -13,8 +13,9 @@ Recommended image style:
 - Banner text should stay short and readable.
 - Avoid tiny UI text in banners.
 
-## 2) Screenshots inside plugin ZIP
-Place screenshots in this plugin repo `assets/` folder (included in release ZIP):
+## 2) Screenshots for WordPress.org (SVN `assets/`)
+Keep screenshots in this plugin repo `mailto-link-form-assets/` folder.
+These files are uploaded to WordPress.org SVN `assets/` and are not part of plugin runtime code:
 
 - `screenshot-1.png`
 - `screenshot-2.png`
@@ -34,6 +35,6 @@ Use one concise line in readme header area:
 ## 4) Submission-ready checklist
 - [ ] Add icon files (`128`, `256`).
 - [ ] Add banner files (`772x250`, optional `1544x500`).
-- [ ] Add screenshots (`screenshot-1..3`) matching readme captions.
+- [ ] Add screenshots (`screenshot-1..3`) to `mailto-link-form-assets/` matching readme captions.
 - [ ] Confirm screenshots do not expose private data.
 - [ ] Rebuild ZIP: `npm run release:zip`.
