@@ -38,34 +38,56 @@ final class MALIFO_Submit
         $recipient = (string) get_post_meta($formId, self::META_RECIPIENT, true);
         $subject = (string) get_post_meta($formId, self::META_SUBJECT, true);
         $bodyTemplate = (string) get_post_meta($formId, self::META_BODY_TEMPLATE, true);
-        $fields = $this->get_fields($formId);
+        $fields = array_values(array_filter($this->get_fields($formId), 'mailto_link_form_is_complete_field'));
 
-        if (!is_email($recipient) || empty($fields)) {
+        if (!is_email($recipient)) {
             $this->redirect_with_error($redirectTo, 'invalid_settings');
         }
 
         $values = [];
         foreach ($fields as $field) {
+            $type = mailto_link_form_get_field_type($field);
             $key = isset($field['key']) ? (string) $field['key'] : '';
+            $fieldValue = isset($field['value']) ? (string) $field['value'] : '';
             $options = isset($field['options']) && is_array($field['options']) ? $field['options'] : [];
             if ($key === '' || empty($options)) {
-                continue;
+                if ($type === 'select') {
+                    continue;
+                }
             }
 
             $inputName = 'malifo_field_' . $key;
-            $selected = isset($_POST[$inputName]) ? sanitize_text_field((string) wp_unslash($_POST[$inputName])) : '';
+            if ($type === 'select') {
+                $selected = isset($_POST[$inputName]) ? sanitize_text_field((string) wp_unslash($_POST[$inputName])) : '';
 
-            if ($selected === '') {
-                $this->redirect_with_error($redirectTo, 'required_option');
+                if ($selected === '') {
+                    $this->redirect_with_error($redirectTo, 'required_option');
+                }
+
+                if (!in_array($selected, $options, true)) {
+                    $this->redirect_with_error($redirectTo, 'invalid_option');
+                }
+
+                $values[$key] = $selected;
+                continue;
             }
 
-            if (!in_array($selected, $options, true)) {
-                $this->redirect_with_error($redirectTo, 'invalid_option');
+            if ($type === 'textarea') {
+                $values[$key] = isset($_POST[$inputName]) ? sanitize_textarea_field((string) wp_unslash($_POST[$inputName])) : '';
+                continue;
             }
 
-            $values[$key] = $selected;
+            if ($type === 'text') {
+                $values[$key] = isset($_POST[$inputName]) ? sanitize_text_field((string) wp_unslash($_POST[$inputName])) : '';
+                continue;
+            }
+
+            if ($type === 'checkbox') {
+                $values[$key] = isset($_POST[$inputName]) ? $fieldValue : '';
+            }
         }
 
+        $subject = mailto_link_form_apply_template($subject, $values);
         $body = mailto_link_form_apply_template($bodyTemplate, $values);
         $body = str_replace(["\r\n", "\r"], "\n", $body);
         $body = str_replace("\n", "\r\n", $body);
@@ -105,7 +127,7 @@ final class MALIFO_Submit
             return [];
         }
 
-        return $decoded;
+        return array_map('mailto_link_form_normalize_field', $decoded);
     }
 
     private function redirect_with_error(string $redirectTo, string $code): void

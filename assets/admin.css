@@ -1,14 +1,33 @@
-.malifo-fields-table td input[type="text"] {
-  width: 100%;
-}
-
 .malifo-fields-table th,
 .malifo-fields-table td {
   vertical-align: top;
 }
 
-.malifo-fields-table td:last-child {
-  width: 90px;
+.malifo-fields-table td input[type="text"],
+.malifo-fields-table td select,
+.malifo-fields-table td textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.malifo-fields-table td textarea {
+  min-height: 68px;
+  resize: vertical;
+}
+
+.malifo-fields-table .malifo-field-cell--type {
+  min-width: 170px;
+}
+
+.malifo-fields-table .malifo-field-cell--key,
+.malifo-fields-table .malifo-field-cell--label,
+.malifo-fields-table .malifo-field-cell--placeholder-setting,
+.malifo-fields-table .malifo-field-cell--options {
+  min-width: 170px;
+}
+
+.malifo-fields-table .malifo-field-cell--value {
+  min-width: 220px;
 }
 
 .malifo-fields-table .malifo-placeholder-cell {
@@ -17,6 +36,21 @@
 
 .malifo-fields-table .malifo-placeholder-value {
   margin-bottom: 0;
+}
+
+.malifo-fields-table .malifo-field-cell--action {
+  width: 90px;
+}
+
+.malifo-fields-table .is-hidden-by-type {
+  display: none;
+}
+
+.malifo-add-field-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 @media (max-width: 782px) {
@@ -50,15 +84,24 @@
     margin-bottom: 4px;
   }
 
-  .malifo-fields-table td:last-child {
+  .malifo-fields-table .is-hidden-by-type {
+    display: none !important;
+  }
+
+  .malifo-fields-table .malifo-placeholder-cell,
+  .malifo-fields-table .malifo-field-cell--type,
+  .malifo-fields-table .malifo-field-cell--key,
+  .malifo-fields-table .malifo-field-cell--label,
+  .malifo-fields-table .malifo-field-cell--value,
+  .malifo-fields-table .malifo-field-cell--placeholder-setting,
+  .malifo-fields-table .malifo-field-cell--options,
+  .malifo-fields-table .malifo-field-cell--action {
+    min-width: 0;
     width: 100%;
   }
 
-  .malifo-fields-table .malifo-placeholder-cell {
-    min-width: 0;
-  }
-
-  .malifo-fields-table .malifo-remove-row {
+  .malifo-fields-table .malifo-remove-row,
+  .malifo-add-field-buttons .button {
     width: 100%;
   }
 }

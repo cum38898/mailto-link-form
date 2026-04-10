@@ -191,6 +191,28 @@ function getRemotePluginHash() {
   return res.status === 0 ? res.stdout : '';
 }
 
+function buildTarArgs() {
+  return [
+    '-C',
+    process.cwd(),
+    '--exclude=.git',
+    '--exclude=node_modules',
+    '--exclude=.npm-cache',
+    '--exclude=.gitignore',
+    '--exclude=.wp-env.json',
+    '--exclude=dist',
+    '--exclude=scripts',
+    '--exclude=package.json',
+    '--exclude=package-lock.json',
+    '--exclude=docs-wordpress-org-submission.md',
+    '--exclude=.gitkeep',
+    '--exclude=docker-data',
+    '-cf',
+    '-',
+    '.',
+  ];
+}
+
 function syncPluginFiles() {
   const pluginDir = `/var/www/html/wp-content/plugins/${PLUGIN_SLUG}`;
   const syncHashDir = '/var/www/html/wp-content/uploads';
@@ -206,24 +228,20 @@ function syncPluginFiles() {
   if (prepStatus !== 0) {
     return false;
   }
-  const copyCmd = [
-    `tar -C "${process.cwd()}"`,
-    "--exclude='.git'",
-    "--exclude='node_modules'",
-    "--exclude='.npm-cache'",
-    "--exclude='.gitignore'",
-    "--exclude='.wp-env.json'",
-    "--exclude='dist'",
-    "--exclude='scripts'",
-    "--exclude='package.json'",
-    "--exclude='package-lock.json'",
-    "--exclude='docs-wordpress-org-submission.md'",
-    "--exclude='.gitkeep'",
-    '--exclude=\'docker-data\'',
-    '-cf - .',
-    `| docker exec -i ${WP_CONTAINER} tar -xf - -C ${pluginDir}`,
-  ].join(' ');
-  if (run('sh', ['-lc', copyCmd]) !== 0) {
+
+  const archive = spawnSync('tar', buildTarArgs(), {
+    encoding: null,
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+  if ((archive.status ?? 1) !== 0 || !archive.stdout) {
+    return false;
+  }
+
+  const extract = spawnSync('docker', ['exec', '-i', WP_CONTAINER, 'tar', '-xf', '-', '-C', pluginDir], {
+    input: archive.stdout,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  });
+  if ((extract.status ?? 1) !== 0) {
     return false;
   }
 

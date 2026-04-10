@@ -40,11 +40,28 @@ function getPluginVersion() {
   return versionMatch[1].trim();
 }
 
-function assertZipCommand() {
-  const check = spawnSync('zip', ['-v'], { stdio: 'ignore' });
-  if ((check.status ?? 1) !== 0) {
-    fail('`zip` command is not available. Install zip and retry.');
+function hasCommand(command, args) {
+  const check = spawnSync(command, args, { stdio: 'ignore' });
+
+  return (check.status ?? 1) === 0;
+}
+
+function getArchiveTool() {
+  if (hasCommand('zip', ['-v'])) {
+    return 'zip';
   }
+
+  if (process.platform === 'win32') {
+    if (hasCommand('powershell.exe', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()'])) {
+      return 'powershell';
+    }
+
+    if (hasCommand('pwsh.exe', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()'])) {
+      return 'pwsh';
+    }
+  }
+
+  fail('Neither `zip` nor PowerShell archive support is available. Install zip and retry.');
 }
 
 function copyReleaseFiles() {
@@ -70,29 +87,45 @@ function copyReleaseFiles() {
   rmSync(join(stageDir, 'languages', '.gitkeep'), { force: true });
 }
 
-function buildZip(version) {
+function buildZip(version, archiveTool) {
   mkdirSync(distDir, { recursive: true });
   const fileName = `${pluginSlug}-${version}.zip`;
   const zipPath = resolve(distDir, fileName);
 
   rmSync(zipPath, { force: true });
 
-  const result = spawnSync('zip', ['-r', zipPath, pluginSlug], {
-    cwd: tempRoot,
-    stdio: 'inherit',
-  });
+  let result;
+
+  if (archiveTool === 'zip') {
+    result = spawnSync('zip', ['-r', zipPath, pluginSlug], {
+      cwd: tempRoot,
+      stdio: 'inherit',
+    });
+  } else {
+    const shell = archiveTool === 'powershell' ? 'powershell.exe' : 'pwsh.exe';
+    const escapedStageDir = stageDir.replace(/'/g, "''");
+    const escapedZipPath = zipPath.replace(/'/g, "''");
+    const command = [
+      `$source = Resolve-Path -LiteralPath '${escapedStageDir}'`,
+      `Compress-Archive -LiteralPath $source -DestinationPath '${escapedZipPath}' -Force`,
+    ].join('; ');
+
+    result = spawnSync(shell, ['-NoProfile', '-NonInteractive', '-Command', command], {
+      stdio: 'inherit',
+    });
+  }
 
   if ((result.status ?? 1) !== 0) {
-    fail('zip command failed.');
+    fail('archive command failed.');
   }
 
   return zipPath;
 }
 
-assertZipCommand();
 const version = getPluginVersion();
+const archiveTool = getArchiveTool();
 copyReleaseFiles();
-const zipPath = buildZip(version);
+const zipPath = buildZip(version, archiveTool);
 rmSync(tempRoot, { recursive: true, force: true });
 
 console.log(`[release:zip] Created: ${zipPath}`);

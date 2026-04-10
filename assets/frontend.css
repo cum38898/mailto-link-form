@@ -4,9 +4,10 @@
 
 .malifo-frontend-form,
 .malifo-frontend-form select,
+.malifo-frontend-form input[type="text"],
+.malifo-frontend-form textarea,
 .malifo-frontend-form button {
   font: inherit;
-  color: inherit;
 }
 
 .malifo-frontend-form .malifo-form-row,
@@ -15,7 +16,36 @@
   margin: 0 0 0.75em;
 }
 
+.malifo-frontend-form .malifo-form-row--checkbox {
+  width: min(100%, 48ch);
+  margin-inline: auto;
+}
+
+.malifo-frontend-form .malifo-field-label,
+.malifo-frontend-form .malifo-checkbox-label {
+  display: block;
+  width: min(100%, 48ch);
+  box-sizing: border-box;
+  margin: 0 auto 0.35em;
+}
+
+.malifo-frontend-form .malifo-field-label:empty {
+  display: none;
+}
+
+.malifo-frontend-form .malifo-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6em;
+  margin-bottom: 0;
+}
+
+.malifo-frontend-form .malifo-checkbox-label span:empty {
+  display: none;
+}
+
 .malifo-frontend-form select,
+.malifo-frontend-form input[type="text"],
 .malifo-frontend-form button {
   display: block;
   width: min(100%, 34ch);
@@ -23,13 +53,29 @@
   margin-inline: auto;
 }
 
-.malifo-frontend-form select {
+.malifo-frontend-form textarea {
+  display: block;
+  width: min(100%, 48ch);
+  min-height: 8em;
+  box-sizing: border-box;
+  margin-inline: auto;
+  resize: vertical;
+}
+
+.malifo-frontend-form select,
+.malifo-frontend-form input[type="text"],
+.malifo-frontend-form button {
   min-height: 2.5em;
 }
 
 .malifo-frontend-form button {
-  min-height: 2.5em;
   cursor: pointer;
+}
+
+.malifo-frontend-form input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
 }
 
 .malifo-frontend-form .malifo-help-text {

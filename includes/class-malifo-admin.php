@@ -128,13 +128,14 @@ final class MALIFO_Admin
 
         $submitLabel = (string) get_post_meta($post->ID, self::META_SUBMIT_LABEL, true);
         $helpText = (string) get_post_meta($post->ID, self::META_HELP_TEXT, true);
-        if ($submitLabel === '') {
-            $submitLabel = mailto_link_form_i18n('Go to Compose', 'メール作成へ');
-        }
-        if ($helpText === '') {
-            $helpText = mailto_link_form_i18n('Opening your email app.', 'メールアプリを開いています');
-        }
         $fields = $this->get_fields($post->ID);
+        if ($this->is_new_unsaved_form($post) && empty($fields)) {
+            $defaults = mailto_link_form_get_default_new_form_values();
+            $fields = $defaults['fields'];
+        }
+        if (empty($fields)) {
+            $fields = [$this->get_empty_field_row()];
+        }
 
         ?>
         <p>
@@ -143,71 +144,76 @@ final class MALIFO_Admin
         </p>
 
         <p>
-            <label for="malifo_help_text"><strong><?php echo esc_html(mailto_link_form_i18n('Button Help Text', 'ボタン下の案内文')); ?></strong></label><br />
+            <label for="malifo_help_text"><strong><?php echo esc_html(mailto_link_form_i18n('Help Text Shown Under the Button After Submit', '送信ボタンを押したあと、ボタン下に表示される案内文')); ?></strong></label><br />
             <input type="text" id="malifo_help_text" name="malifo_help_text" class="widefat" value="<?php echo esc_attr($helpText); ?>" placeholder="<?php echo esc_attr(mailto_link_form_i18n('Opening your email app.', 'メールアプリを開いています')); ?>" />
         </p>
 
         <hr />
-        <p><strong><?php echo esc_html(mailto_link_form_i18n('<select> Fields', '<select>項目')); ?></strong></p>
+        <p><strong><?php echo esc_html(mailto_link_form_i18n('Items', '項目')); ?></strong></p>
         <p>
-            <small><?php echo esc_html(mailto_link_form_i18n('Field Key maps to placeholders in Body Template.', 'フィールドキーは本文テンプレートのプレースホルダーに対応します。')); ?></small>
+            <small><?php echo esc_html(mailto_link_form_i18n('Item Key maps to placeholders in Subject and Body Template.', '項目キーは件名と本文テンプレートのプレースホルダーに対応します。')); ?></small>
         </p>
         <?php
-        $labelFieldKey = mailto_link_form_i18n('Field Key', 'フィールドキー');
+        $labelType = mailto_link_form_i18n('Type', '種類');
+        $labelFieldKey = mailto_link_form_i18n('Item Key', '項目キー');
         $labelLabel = mailto_link_form_i18n('Label', 'ラベル');
-        $labelOptions = mailto_link_form_i18n('Options (comma-separated)', '選択肢（カンマ区切り）');
-        $labelPlaceholder = mailto_link_form_i18n('Placeholder', 'プレースホルダー');
+        $labelValue = mailto_link_form_i18n('Value', '内容');
+        $labelPlaceholderSetting = mailto_link_form_i18n('Placeholder', 'プレースホルダー');
+        $labelOptions = mailto_link_form_i18n('Options (, separated)', '選択肢（,区切り）');
+        $labelTemplate = mailto_link_form_i18n('Template', 'テンプレート');
         $labelAction = mailto_link_form_i18n('Action', '操作');
+        $keyExample = mailto_link_form_i18n('(e.g.) inquiry_type', '（例）問い合わせ種別');
+        $labelExample = mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別');
+        $valueExample = mailto_link_form_i18n('(e.g.) Default value', '（例）初期値');
+        $placeholderExample = mailto_link_form_i18n('(e.g.) Enter your message', '（例）ご用件をご入力ください');
+        $optionsExample = mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他');
+        $labels = [
+            'type' => $labelType,
+            'key' => $labelFieldKey,
+            'label' => $labelLabel,
+            'value' => $labelValue,
+            'placeholder' => $labelPlaceholderSetting,
+            'options' => $labelOptions,
+            'template' => $labelTemplate,
+            'action' => $labelAction,
+        ];
+        $examples = [
+            'key' => $keyExample,
+            'label' => $labelExample,
+            'value' => $valueExample,
+            'placeholder' => $placeholderExample,
+            'options' => $optionsExample,
+        ];
+        $typeOptions = $this->get_field_type_options();
         ?>
         <table class="widefat malifo-fields-table">
             <thead>
                 <tr>
+                    <th><?php echo esc_html($labelType); ?></th>
                     <th><?php echo esc_html($labelFieldKey); ?></th>
                     <th><?php echo esc_html($labelLabel); ?></th>
+                    <th><?php echo esc_html($labelValue); ?></th>
+                    <th><?php echo esc_html($labelPlaceholderSetting); ?></th>
                     <th><?php echo esc_html($labelOptions); ?></th>
-                    <th><?php echo esc_html($labelPlaceholder); ?></th>
+                    <th><?php echo esc_html($labelTemplate); ?></th>
                     <th><?php echo esc_html($labelAction); ?></th>
                 </tr>
             </thead>
             <tbody id="malifo-fields-body">
-            <?php if (!empty($fields)) : ?>
                 <?php foreach ($fields as $field) : ?>
-                    <tr class="malifo-field-row">
-                        <td data-label="<?php echo esc_attr($labelFieldKey); ?>"><input type="text" name="malifo_field_key[]" class="malifo-field-key" value="<?php echo esc_attr((string) $field['key']); ?>" /></td>
-                        <td data-label="<?php echo esc_attr($labelLabel); ?>"><input type="text" name="malifo_field_label[]" value="<?php echo esc_attr((string) $field['label']); ?>" /></td>
-                        <td data-label="<?php echo esc_attr($labelOptions); ?>"><input type="text" name="malifo_field_options[]" value="<?php echo esc_attr(implode(', ', (array) $field['options'])); ?>" /></td>
-                        <td class="malifo-placeholder-cell" data-label="<?php echo esc_attr($labelPlaceholder); ?>">
-                            <input type="text" class="malifo-placeholder-value" readonly value="<?php echo esc_attr('{{' . (string) $field['key'] . '}}'); ?>" onclick="this.select();" />
-                        </td>
-                        <td data-label="<?php echo esc_attr($labelAction); ?>"><button type="button" class="button button-secondary malifo-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
-                    </tr>
+                    <?php $this->render_field_row($field, $labels, $examples, $typeOptions); ?>
                 <?php endforeach; ?>
-            <?php else : ?>
-                <tr class="malifo-field-row">
-                    <td data-label="<?php echo esc_attr($labelFieldKey); ?>"><input type="text" name="malifo_field_key[]" class="malifo-field-key" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) your_field_key', '（例）your_field_key')); ?>" /></td>
-                    <td data-label="<?php echo esc_attr($labelLabel); ?>"><input type="text" name="malifo_field_label[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別')); ?>" /></td>
-                    <td data-label="<?php echo esc_attr($labelOptions); ?>"><input type="text" name="malifo_field_options[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他')); ?>" /></td>
-                    <td class="malifo-placeholder-cell" data-label="<?php echo esc_attr($labelPlaceholder); ?>">
-                        <input type="text" class="malifo-placeholder-value" readonly value="" onclick="this.select();" />
-                    </td>
-                    <td data-label="<?php echo esc_attr($labelAction); ?>"><button type="button" class="button button-secondary malifo-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
-                </tr>
-            <?php endif; ?>
             </tbody>
         </table>
-        <p>
-            <button type="button" class="button button-primary" id="malifo-add-row"><?php echo esc_html(mailto_link_form_i18n('Add <select> Field', '<select>項目を追加')); ?></button>
-        </p>
+        <div class="malifo-add-field-buttons">
+            <?php foreach ($typeOptions as $fieldType => $fieldTypeLabel) : ?>
+                <button type="button" class="button malifo-add-row" data-field-type="<?php echo esc_attr($fieldType); ?>">
+                    <?php echo esc_html($this->get_add_button_label($fieldType)); ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
         <template id="malifo-row-template">
-            <tr class="malifo-field-row">
-                <td data-label="<?php echo esc_attr($labelFieldKey); ?>"><input type="text" name="malifo_field_key[]" class="malifo-field-key" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) your_field_key', '（例）your_field_key')); ?>" /></td>
-                <td data-label="<?php echo esc_attr($labelLabel); ?>"><input type="text" name="malifo_field_label[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別')); ?>" /></td>
-                <td data-label="<?php echo esc_attr($labelOptions); ?>"><input type="text" name="malifo_field_options[]" value="" placeholder="<?php echo esc_attr(mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他')); ?>" /></td>
-                <td class="malifo-placeholder-cell" data-label="<?php echo esc_attr($labelPlaceholder); ?>">
-                    <input type="text" class="malifo-placeholder-value" readonly value="" onclick="this.select();" />
-                </td>
-                <td data-label="<?php echo esc_attr($labelAction); ?>"><button type="button" class="button button-secondary malifo-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button></td>
-            </tr>
+            <?php $this->render_field_row($this->get_empty_field_row(), $labels, $examples, $typeOptions); ?>
         </template>
         <?php
     }
@@ -217,10 +223,14 @@ final class MALIFO_Admin
         $recipient = (string) get_post_meta($post->ID, self::META_RECIPIENT, true);
         $subject = (string) get_post_meta($post->ID, self::META_SUBJECT, true);
         $bodyTemplate = (string) get_post_meta($post->ID, self::META_BODY_TEMPLATE, true);
-        $fields = $this->get_fields($post->ID);
-
-        if ($bodyTemplate === '' && !empty($fields)) {
-            $bodyTemplate = mailto_link_form_generate_default_template($fields);
+        if ($this->is_new_unsaved_form($post)) {
+            $defaults = mailto_link_form_get_default_new_form_values();
+            if ($subject === '') {
+                $subject = $defaults['subject'];
+            }
+            if ($bodyTemplate === '') {
+                $bodyTemplate = $defaults['body'];
+            }
         }
 
         ?>
@@ -231,7 +241,8 @@ final class MALIFO_Admin
 
         <p>
             <label for="malifo_subject"><strong><?php echo esc_html(mailto_link_form_i18n('Subject', 'メール件名')); ?></strong></label><br />
-            <input type="text" id="malifo_subject" name="malifo_subject" class="widefat" value="<?php echo esc_attr($subject); ?>" />
+            <input type="text" id="malifo_subject" name="malifo_subject" class="widefat" value="<?php echo esc_attr($subject); ?>" placeholder="<?php echo esc_attr(mailto_link_form_i18n('Inquiry', 'お問い合わせ')); ?>" />
+            <small><?php echo esc_html(mailto_link_form_i18n('Use placeholders like {{...}}.', '{{...}} のようなプレースホルダーを使えます。')); ?></small>
         </p>
 
         <p>
@@ -251,7 +262,7 @@ final class MALIFO_Admin
 
         $shortcode = sprintf('[mailto_link_form id="%d"]', (int) $post->ID);
         ?>
-        <p><?php echo esc_html(mailto_link_form_i18n('Paste this shortcode where you want to show the form:', 'フォームを表示したい場所に、このショートコードを貼り付けてください:')); ?></p>
+        <p><?php echo esc_html(mailto_link_form_i18n('Paste this shortcode into a page or similar content area.', '固定ページなどに、このショートコードを貼り付けてください')); ?></p>
         <input type="text" class="widefat" readonly value="<?php echo esc_attr($shortcode); ?>" onclick="this.select();" />
         <?php
     }
@@ -271,68 +282,68 @@ final class MALIFO_Admin
             return;
         }
 
-        $recipient = isset($_POST['malifo_recipient_email']) ? sanitize_email(wp_unslash((string) $_POST['malifo_recipient_email'])) : '';
+        $recipient = isset($_POST['malifo_recipient_email']) ? sanitize_text_field(wp_unslash((string) $_POST['malifo_recipient_email'])) : '';
         $subject = isset($_POST['malifo_subject']) ? sanitize_text_field(wp_unslash((string) $_POST['malifo_subject'])) : '';
         $bodyTemplate = isset($_POST['malifo_body_template']) ? sanitize_textarea_field(wp_unslash((string) $_POST['malifo_body_template'])) : '';
         $submitLabel = isset($_POST['malifo_submit_label']) ? sanitize_text_field(wp_unslash((string) $_POST['malifo_submit_label'])) : '';
         $helpText = isset($_POST['malifo_help_text']) ? sanitize_text_field(wp_unslash((string) $_POST['malifo_help_text'])) : '';
 
-        if ($recipient === '' || !is_email($recipient)) {
-            $this->set_admin_error(mailto_link_form_i18n('Recipient email is required.', '送信先メールアドレスは必須です。'));
-            return;
-        }
-
-        if ($subject === '') {
-            $this->set_admin_error(mailto_link_form_i18n('Subject is required.', '件名は必須です。'));
-            return;
-        }
-
+        $typesInput = filter_input(INPUT_POST, 'malifo_field_type', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
         $keysInput = filter_input(INPUT_POST, 'malifo_field_key', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
         $labelsInput = filter_input(INPUT_POST, 'malifo_field_label', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
+        $valuesInput = filter_input(INPUT_POST, 'malifo_field_value', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
+        $placeholdersInput = filter_input(INPUT_POST, 'malifo_field_placeholder', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
         $optionsInput = filter_input(INPUT_POST, 'malifo_field_options', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
 
+        $types = is_array($typesInput) ? array_map('wp_unslash', $typesInput) : [];
         $keys = is_array($keysInput) ? array_map('wp_unslash', $keysInput) : [];
         $labels = is_array($labelsInput) ? array_map('wp_unslash', $labelsInput) : [];
+        $values = is_array($valuesInput) ? array_map('wp_unslash', $valuesInput) : [];
+        $placeholders = is_array($placeholdersInput) ? array_map('wp_unslash', $placeholdersInput) : [];
         $optionsList = is_array($optionsInput) ? array_map('wp_unslash', $optionsInput) : [];
 
         $fields = [];
         $seenKeys = [];
-        $count = max(count($keys), count($labels), count($optionsList));
+        $count = max(count($types), count($keys), count($labels), count($values), count($placeholders), count($optionsList));
 
         for ($i = 0; $i < $count; $i++) {
+            $rawType = isset($types[$i]) ? (string) $types[$i] : 'select';
             $rawKey = isset($keys[$i]) ? (string) $keys[$i] : '';
             $rawLabel = isset($labels[$i]) ? (string) $labels[$i] : '';
+            $rawValue = isset($values[$i]) ? (string) $values[$i] : '';
+            $rawPlaceholder = isset($placeholders[$i]) ? (string) $placeholders[$i] : '';
             $rawOptions = isset($optionsList[$i]) ? (string) $optionsList[$i] : '';
 
-            if (trim($rawKey) === '' && trim($rawLabel) === '' && trim($rawOptions) === '') {
+            if (trim($rawKey) === '' && trim($rawLabel) === '' && trim($rawValue) === '' && trim($rawPlaceholder) === '' && trim($rawOptions) === '') {
                 continue;
             }
 
-            $key = mailto_link_form_normalize_field_key($rawKey);
+            $type = mailto_link_form_get_field_type(['type' => $rawType]);
+            $key = trim($rawKey) === '' ? '' : mailto_link_form_normalize_field_key($rawKey);
             $label = sanitize_text_field($rawLabel);
-            $split = preg_split('/[,\x{FF0C}\x{3001}\r\n]+/u', $rawOptions);
+            $value = '';
+            $placeholder = '';
             $options = [];
-            foreach ((array) $split as $option) {
-                $clean = sanitize_text_field(trim((string) $option));
-                if ($clean !== '') {
-                    $options[] = $clean;
+
+            if ($type === 'select') {
+                $split = preg_split('/[,\x{FF0C}\x{3001}\r\n]+/u', $rawOptions);
+                foreach ((array) $split as $option) {
+                    $clean = sanitize_text_field(trim((string) $option));
+                    if ($clean !== '') {
+                        $options[] = $clean;
+                    }
                 }
+            } elseif ($type === 'textarea') {
+                $value = sanitize_textarea_field($rawValue);
+                $placeholder = sanitize_text_field($rawPlaceholder);
+            } elseif ($type === 'text') {
+                $value = sanitize_text_field($rawValue);
+                $placeholder = sanitize_text_field($rawPlaceholder);
+            } else {
+                $value = sanitize_text_field($rawValue);
             }
 
-            if ($label === '' || empty($options)) {
-                $this->set_admin_error(mailto_link_form_i18n('Each select field needs key, label, and at least one option.', '各select項目には、キー・表示名・選択肢（1件以上）が必要です。'));
-                return;
-            }
-
-            if ($key === '') {
-                $key = mailto_link_form_normalize_field_key($label);
-            }
-
-            if ($key === '') {
-                $key = 'field_' . ($i + 1);
-            }
-
-            if (isset($seenKeys[$key])) {
+            if ($key !== '' && isset($seenKeys[$key])) {
                 $suffix = 2;
                 $base = $key;
                 while (isset($seenKeys[$base . '_' . $suffix])) {
@@ -341,23 +352,19 @@ final class MALIFO_Admin
                 $key = $base . '_' . $suffix;
             }
 
-            $seenKeys[$key] = true;
+            if ($key !== '') {
+                $seenKeys[$key] = true;
+            }
 
-            $fields[] = [
+            $fields[] = mailto_link_form_normalize_field([
+                'type' => $type,
                 'key' => $key,
                 'label' => $label,
+                'value' => $value,
+                'placeholder' => $placeholder,
                 'options' => array_values(array_unique($options)),
                 'required' => false,
-            ];
-        }
-
-        if (empty($fields)) {
-            $this->set_admin_error(mailto_link_form_i18n('At least one select field is required.', 'select項目を1件以上設定してください。'));
-            return;
-        }
-
-        if ($bodyTemplate === '') {
-            $bodyTemplate = mailto_link_form_generate_default_template($fields);
+            ]);
         }
 
         update_post_meta($postId, self::META_RECIPIENT, $recipient);
@@ -484,7 +491,103 @@ final class MALIFO_Admin
             return [];
         }
 
-        return $decoded;
+        return array_map('mailto_link_form_normalize_field', $decoded);
+    }
+
+    private function is_new_unsaved_form(\WP_Post $post): bool
+    {
+        return $post->post_type === self::POST_TYPE && $post->post_status === 'auto-draft';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function get_empty_field_row(string $type = 'select'): array
+    {
+        return mailto_link_form_normalize_field([
+            'type' => $type,
+            'key' => '',
+            'label' => '',
+            'value' => '',
+            'placeholder' => '',
+            'options' => [],
+            'required' => false,
+        ]);
+    }
+
+    private function build_placeholder(string $key): string
+    {
+        return mailto_link_form_build_template_token($key);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function get_field_type_options(): array
+    {
+        return [
+            'select' => mailto_link_form_i18n('<select>', '<select>'),
+            'textarea' => mailto_link_form_i18n('<textarea>', '<textarea>'),
+            'text' => mailto_link_form_i18n('<input type="text">', '<input type="text">'),
+            'checkbox' => mailto_link_form_i18n('<input type="checkbox">', '<input type="checkbox">'),
+        ];
+    }
+
+    private function get_add_button_label(string $type): string
+    {
+        $labels = [
+            'select' => mailto_link_form_i18n('Add <select>', '<select>追加'),
+            'textarea' => mailto_link_form_i18n('Add <textarea>', '<textarea>追加'),
+            'text' => mailto_link_form_i18n('Add <input type="text">', '<input type="text">追加'),
+            'checkbox' => mailto_link_form_i18n('Add <input type="checkbox">', '<input type="checkbox">追加'),
+        ];
+
+        return $labels[$type] ?? $labels['select'];
+    }
+
+    /**
+     * @param array<string, mixed> $field
+     * @param array<string, string> $labels
+     * @param array<string, string> $examples
+     * @param array<string, string> $typeOptions
+     */
+    private function render_field_row(array $field, array $labels, array $examples, array $typeOptions): void
+    {
+        $field = mailto_link_form_normalize_field($field);
+        $type = (string) $field['type'];
+        $optionsValue = implode(', ', (array) $field['options']);
+        ?>
+        <tr class="malifo-field-row" data-field-type="<?php echo esc_attr($type); ?>">
+            <td class="malifo-field-cell malifo-field-cell--type" data-label="<?php echo esc_attr($labels['type']); ?>">
+                <select name="malifo_field_type[]" class="malifo-field-type">
+                    <?php foreach ($typeOptions as $optionValue => $optionLabel) : ?>
+                        <option value="<?php echo esc_attr($optionValue); ?>" <?php selected($type, $optionValue); ?>><?php echo esc_html($optionLabel); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </td>
+            <td class="malifo-field-cell malifo-field-cell--key" data-label="<?php echo esc_attr($labels['key']); ?>">
+                <input type="text" name="malifo_field_key[]" class="malifo-field-key" value="<?php echo esc_attr((string) $field['key']); ?>" placeholder="<?php echo esc_attr($examples['key']); ?>" />
+            </td>
+            <td class="malifo-field-cell malifo-field-cell--label" data-label="<?php echo esc_attr($labels['label']); ?>">
+                <input type="text" name="malifo_field_label[]" class="malifo-field-label" value="<?php echo esc_attr((string) $field['label']); ?>" placeholder="<?php echo esc_attr($examples['label']); ?>" />
+            </td>
+            <td class="malifo-field-cell malifo-field-cell--value" data-label="<?php echo esc_attr($labels['value']); ?>">
+                <textarea name="malifo_field_value[]" class="malifo-field-value" rows="2" placeholder="<?php echo esc_attr($examples['value']); ?>"><?php echo esc_textarea((string) $field['value']); ?></textarea>
+            </td>
+            <td class="malifo-field-cell malifo-field-cell--placeholder-setting" data-label="<?php echo esc_attr($labels['placeholder']); ?>">
+                <input type="text" name="malifo_field_placeholder[]" class="malifo-field-placeholder" value="<?php echo esc_attr((string) $field['placeholder']); ?>" placeholder="<?php echo esc_attr($examples['placeholder']); ?>" />
+            </td>
+            <td class="malifo-field-cell malifo-field-cell--options" data-label="<?php echo esc_attr($labels['options']); ?>">
+                <input type="text" name="malifo_field_options[]" class="malifo-field-options" value="<?php echo esc_attr($optionsValue); ?>" placeholder="<?php echo esc_attr($examples['options']); ?>" />
+            </td>
+            <td class="malifo-field-cell malifo-field-cell--template malifo-placeholder-cell" data-label="<?php echo esc_attr($labels['template']); ?>">
+                <input type="text" class="malifo-placeholder-value" readonly value="<?php echo esc_attr($this->build_placeholder((string) $field['key'])); ?>" onclick="this.select();" />
+            </td>
+            <td class="malifo-field-cell malifo-field-cell--action" data-label="<?php echo esc_attr($labels['action']); ?>">
+                <button type="button" class="button button-secondary malifo-remove-row"><?php echo esc_html(mailto_link_form_i18n('Remove', '削除')); ?></button>
+            </td>
+        </tr>
+        <?php
     }
 
     private function set_admin_error(string $message): void
