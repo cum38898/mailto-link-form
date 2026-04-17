@@ -7,8 +7,8 @@ import { join, relative } from 'node:path';
 const SITE_URL = 'http://localhost:8888';
 const ADMIN_URL = `${SITE_URL}/wp-admin`;
 const NETWORK = 'wpmlf-net';
-const DB_CONTAINER = 'wpmlf-db';
-const WP_CONTAINER = 'wpmlf-wordpress';
+const DB_CONTAINER = 'malifo-db';
+const WP_CONTAINER = 'malifo-wordpress';
 const DB_VOLUME = 'wpmlf-db-data';
 const WP_VOLUME = 'wpmlf-wp-data';
 const DB_IMAGE = 'mariadb:11.4';
@@ -114,7 +114,7 @@ function startWordPress() {
     '-p',
     '8888:80',
     '-e',
-    'WORDPRESS_DB_HOST=wpmlf-db:3306',
+    'WORDPRESS_DB_HOST=malifo-db:3306',
     '-e',
     'WORDPRESS_DB_USER=wordpress',
     '-e',
@@ -134,7 +134,7 @@ function runWpCli(args, capture = false) {
     '--network',
     NETWORK,
     '-e',
-    'WORDPRESS_DB_HOST=wpmlf-db:3306',
+    'WORDPRESS_DB_HOST=malifo-db:3306',
     '-e',
     'WORDPRESS_DB_USER=wordpress',
     '-e',

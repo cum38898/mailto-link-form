@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 
-const CONTAINERS = ['wpmlf-wordpress', 'wpmlf-db'];
+const CONTAINERS = ['malifo-wordpress', 'malifo-db'];
 
 function run(command, args) {
   const result = spawnSync(command, args, { stdio: 'inherit' });
@@ -18,4 +18,4 @@ for (const container of CONTAINERS) {
   }
 }
 
-console.log('[dev:stop] Stopped wpmlf-wordpress and wpmlf-db (if they existed).');
+console.log('[dev:stop] Stopped malifo-wordpress and malifo-db (if they existed).');

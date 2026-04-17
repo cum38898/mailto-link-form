@@ -91,14 +91,14 @@ final class MALIFO_Shortcode
                 $key = isset($field['key']) ? (string) $field['key'] : '';
                 $label = isset($field['label']) ? (string) $field['label'] : '';
                 $value = isset($field['value']) ? (string) $field['value'] : '';
-                $placeholder = isset($field['placeholder']) ? (string) $field['placeholder'] : '';
+                $required = !empty($field['required']);
                 $options = isset($field['options']) && is_array($field['options']) ? $field['options'] : [];
                 $fieldId = 'malifo_field_' . $key;
                 ?>
                 <?php if ($type === 'select') : ?>
                     <p class="malifo-form-row malifo-form-row--select">
-                        <select id="<?php echo esc_attr($fieldId); ?>" name="<?php echo esc_attr($fieldId); ?>" required>
-                            <option value="" selected disabled><?php echo esc_html($label); ?></option>
+                        <select id="<?php echo esc_attr($fieldId); ?>" name="<?php echo esc_attr($fieldId); ?>"<?php echo $required ? ' required' : ''; ?>>
+                            <option value="" selected><?php echo esc_html($label); ?></option>
                             <?php foreach ($options as $option) : ?>
                                 <option value="<?php echo esc_attr((string) $option); ?>"><?php echo esc_html((string) $option); ?></option>
                             <?php endforeach; ?>
@@ -107,17 +107,17 @@ final class MALIFO_Shortcode
                 <?php elseif ($type === 'textarea') : ?>
                     <div class="malifo-form-row malifo-form-row--textarea">
                         <label class="malifo-field-label" for="<?php echo esc_attr($fieldId); ?>"><?php echo esc_html($label); ?></label>
-                        <textarea id="<?php echo esc_attr($fieldId); ?>" name="<?php echo esc_attr($fieldId); ?>" rows="5" placeholder="<?php echo esc_attr($placeholder); ?>"><?php echo esc_textarea($value); ?></textarea>
+                        <textarea id="<?php echo esc_attr($fieldId); ?>" name="<?php echo esc_attr($fieldId); ?>" rows="5"<?php echo $required ? ' required' : ''; ?>><?php echo esc_textarea($value); ?></textarea>
                     </div>
                 <?php elseif ($type === 'text') : ?>
                     <div class="malifo-form-row malifo-form-row--text">
                         <label class="malifo-field-label" for="<?php echo esc_attr($fieldId); ?>"><?php echo esc_html($label); ?></label>
-                        <input type="text" id="<?php echo esc_attr($fieldId); ?>" name="<?php echo esc_attr($fieldId); ?>" value="<?php echo esc_attr($value); ?>" placeholder="<?php echo esc_attr($placeholder); ?>" />
+                        <input type="text" id="<?php echo esc_attr($fieldId); ?>" name="<?php echo esc_attr($fieldId); ?>" value="<?php echo esc_attr($value); ?>"<?php echo $required ? ' required' : ''; ?> />
                     </div>
                 <?php elseif ($type === 'checkbox') : ?>
                     <div class="malifo-form-row malifo-form-row--checkbox">
                         <label class="malifo-checkbox-label" for="<?php echo esc_attr($fieldId); ?>">
-                            <input type="checkbox" id="<?php echo esc_attr($fieldId); ?>" name="<?php echo esc_attr($fieldId); ?>" value="1" />
+                            <input type="checkbox" id="<?php echo esc_attr($fieldId); ?>" name="<?php echo esc_attr($fieldId); ?>" value="1"<?php echo $required ? ' required' : ''; ?> />
                             <span><?php echo esc_html($label); ?></span>
                         </label>
                     </div>

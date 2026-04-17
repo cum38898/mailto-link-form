@@ -75,20 +75,16 @@
     return typeInput.value;
   }
 
-  function shouldShowCell(cellType, rowType) {
-    if (cellType === "value") {
-      return rowType === "textarea" || rowType === "text" || rowType === "checkbox";
-    }
-
-    if (cellType === "placeholder-setting") {
-      return rowType === "textarea" || rowType === "text";
-    }
-
-    if (cellType === "options") {
+  function shouldShowContentVariant(variantType, rowType) {
+    if (variantType === "options") {
       return rowType === "select";
     }
 
-    return true;
+    if (variantType === "value") {
+      return rowType === "textarea" || rowType === "text" || rowType === "checkbox";
+    }
+
+    return false;
   }
 
   function syncRowType(row) {
@@ -99,21 +95,21 @@
     var rowType = getRowType(row);
     row.setAttribute("data-field-type", rowType);
 
-    row.querySelectorAll(".malifo-field-cell").forEach(function (cell) {
-      if (!(cell instanceof HTMLElement)) {
+    row.querySelectorAll(".malifo-field-content-variant").forEach(function (variant) {
+      if (!(variant instanceof HTMLElement)) {
         return;
       }
 
-      var fieldClass = Array.from(cell.classList).find(function (className) {
-        return className.indexOf("malifo-field-cell--") === 0;
+      var variantClass = Array.from(variant.classList).find(function (className) {
+        return className.indexOf("malifo-field-content-variant--") === 0;
       });
 
-      if (!fieldClass) {
+      if (!variantClass) {
         return;
       }
 
-      var cellType = fieldClass.replace("malifo-field-cell--", "");
-      cell.classList.toggle("is-hidden-by-type", !shouldShowCell(cellType, rowType));
+      var variantType = variantClass.replace("malifo-field-content-variant--", "");
+      variant.classList.toggle("is-hidden-by-type", !shouldShowContentVariant(variantType, rowType));
     });
   }
 
@@ -132,8 +128,42 @@
     placeholderInput.value = normalized ? "{{" + normalized + "}}" : "";
   }
 
+  function updateRowExamples(row) {
+    if (!(row instanceof HTMLElement)) {
+      return;
+    }
+
+    var rowType = getRowType(row);
+
+    row.querySelectorAll(".malifo-field-key, .malifo-field-label, .malifo-field-value, .malifo-field-options").forEach(function (input) {
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+
+      var datasetKey = "example" + rowType.charAt(0).toUpperCase() + rowType.slice(1);
+      var example = input.dataset[datasetKey] || "";
+      input.placeholder = example;
+    });
+  }
+
+  function syncRequiredField(row) {
+    if (!(row instanceof HTMLElement)) {
+      return;
+    }
+
+    var requiredInput = row.querySelector(".malifo-field-required-value");
+    var requiredToggle = row.querySelector(".malifo-field-required-toggle");
+    if (!(requiredInput instanceof HTMLInputElement) || !(requiredToggle instanceof HTMLInputElement)) {
+      return;
+    }
+
+    requiredInput.value = requiredToggle.checked ? "1" : "0";
+  }
+
   function syncRow(row) {
     syncRowType(row);
+    updateRowExamples(row);
+    syncRequiredField(row);
     updateRowPlaceholder(row);
   }
 
@@ -146,9 +176,18 @@
       return;
     }
 
-    row.querySelectorAll("input[type='text'], textarea").forEach(function (input) {
+    row.querySelectorAll(".malifo-field-key, .malifo-field-label, .malifo-field-value, .malifo-field-options").forEach(function (input) {
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+
       input.value = "";
     });
+
+    var requiredToggle = row.querySelector(".malifo-field-required-toggle");
+    if (requiredToggle instanceof HTMLInputElement) {
+      requiredToggle.checked = false;
+    }
 
     syncRow(row);
   }
@@ -198,11 +237,13 @@
 
     tbody.addEventListener("change", function (event) {
       var target = event.target;
-      if (!(target instanceof HTMLElement) || !target.classList.contains("malifo-field-type")) {
+      if (!(target instanceof HTMLElement)) {
         return;
       }
 
-      syncRow(target.closest(".malifo-field-row"));
+      if (target.classList.contains("malifo-field-type") || target.classList.contains("malifo-field-required-toggle")) {
+        syncRow(target.closest(".malifo-field-row"));
+      }
     });
 
     tbody.addEventListener("click", function (event) {

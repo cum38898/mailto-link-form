@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 
-const CONTAINERS = ['wpmlf-wordpress', 'wpmlf-db'];
+const CONTAINERS = ['malifo-wordpress', 'malifo-db'];
 const VOLUMES = ['wpmlf-wp-data', 'wpmlf-db-data'];
 const NETWORK = 'wpmlf-net';
 

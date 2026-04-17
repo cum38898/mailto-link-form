@@ -49,6 +49,7 @@ final class MALIFO_Submit
             $type = mailto_link_form_get_field_type($field);
             $key = isset($field['key']) ? (string) $field['key'] : '';
             $fieldValue = isset($field['value']) ? (string) $field['value'] : '';
+            $required = !empty($field['required']);
             $options = isset($field['options']) && is_array($field['options']) ? $field['options'] : [];
             if ($key === '' || empty($options)) {
                 if ($type === 'select') {
@@ -60,11 +61,11 @@ final class MALIFO_Submit
             if ($type === 'select') {
                 $selected = isset($_POST[$inputName]) ? sanitize_text_field((string) wp_unslash($_POST[$inputName])) : '';
 
-                if ($selected === '') {
+                if ($required && $selected === '') {
                     $this->redirect_with_error($redirectTo, 'required_option');
                 }
 
-                if (!in_array($selected, $options, true)) {
+                if ($selected !== '' && !in_array($selected, $options, true)) {
                     $this->redirect_with_error($redirectTo, 'invalid_option');
                 }
 
@@ -74,16 +75,25 @@ final class MALIFO_Submit
 
             if ($type === 'textarea') {
                 $values[$key] = isset($_POST[$inputName]) ? sanitize_textarea_field((string) wp_unslash($_POST[$inputName])) : '';
+                if ($required && $values[$key] === '') {
+                    $this->redirect_with_error($redirectTo, 'required_field');
+                }
                 continue;
             }
 
             if ($type === 'text') {
                 $values[$key] = isset($_POST[$inputName]) ? sanitize_text_field((string) wp_unslash($_POST[$inputName])) : '';
+                if ($required && $values[$key] === '') {
+                    $this->redirect_with_error($redirectTo, 'required_field');
+                }
                 continue;
             }
 
             if ($type === 'checkbox') {
                 $values[$key] = isset($_POST[$inputName]) ? $fieldValue : '';
+                if ($required && $values[$key] === '') {
+                    $this->redirect_with_error($redirectTo, 'required_field');
+                }
             }
         }
 

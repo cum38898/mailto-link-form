@@ -41,7 +41,7 @@ function mailto_link_form_normalize_field(array $field): array
         'type' => $type,
         'key' => isset($field['key']) ? mailto_link_form_normalize_field_key((string) $field['key']) : '',
         'label' => isset($field['label']) ? sanitize_text_field((string) $field['label']) : '',
-        'required' => false,
+        'required' => !empty($field['required']),
     ];
 
     if ($type === 'select') {
@@ -56,23 +56,11 @@ function mailto_link_form_normalize_field(array $field): array
 
         $normalized['options'] = array_values(array_unique($cleanOptions));
         $normalized['value'] = '';
-        $normalized['placeholder'] = '';
-
-        return $normalized;
-    }
-
-    if ($type === 'textarea') {
-        $normalized['value'] = isset($field['value']) ? sanitize_textarea_field((string) $field['value']) : '';
-        $normalized['placeholder'] = isset($field['placeholder']) ? sanitize_text_field((string) $field['placeholder']) : '';
-        $normalized['options'] = [];
 
         return $normalized;
     }
 
     $normalized['value'] = isset($field['value']) ? sanitize_text_field((string) $field['value']) : '';
-    $normalized['placeholder'] = $type === 'text' && isset($field['placeholder'])
-        ? sanitize_text_field((string) $field['placeholder'])
-        : '';
     $normalized['options'] = [];
 
     return $normalized;

@@ -158,32 +158,21 @@ final class MALIFO_Admin
         $labelFieldKey = mailto_link_form_i18n('Item Key', '項目キー');
         $labelLabel = mailto_link_form_i18n('Label', 'ラベル');
         $labelValue = mailto_link_form_i18n('Value', '内容');
-        $labelPlaceholderSetting = mailto_link_form_i18n('Placeholder', 'プレースホルダー');
-        $labelOptions = mailto_link_form_i18n('Options (, separated)', '選択肢（,区切り）');
-        $labelTemplate = mailto_link_form_i18n('Template', 'テンプレート');
+        $labelRequired = mailto_link_form_i18n('Required', '必須');
+        $labelPlaceholder = mailto_link_form_i18n('Placeholder', 'プレースホルダー');
         $labelAction = mailto_link_form_i18n('Action', '操作');
-        $keyExample = mailto_link_form_i18n('(e.g.) inquiry_type', '（例）問い合わせ種別');
-        $labelExample = mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別');
-        $valueExample = mailto_link_form_i18n('(e.g.) Default value', '（例）初期値');
-        $placeholderExample = mailto_link_form_i18n('(e.g.) Enter your message', '（例）ご用件をご入力ください');
-        $optionsExample = mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他');
+        $labelOptionsNote = mailto_link_form_i18n('(, separated)', '（,区切り）');
         $labels = [
             'type' => $labelType,
             'key' => $labelFieldKey,
             'label' => $labelLabel,
             'value' => $labelValue,
-            'placeholder' => $labelPlaceholderSetting,
-            'options' => $labelOptions,
-            'template' => $labelTemplate,
+            'required' => $labelRequired,
+            'placeholder' => $labelPlaceholder,
             'action' => $labelAction,
+            'options_note' => $labelOptionsNote,
         ];
-        $examples = [
-            'key' => $keyExample,
-            'label' => $labelExample,
-            'value' => $valueExample,
-            'placeholder' => $placeholderExample,
-            'options' => $optionsExample,
-        ];
+        $examples = $this->get_field_examples();
         $typeOptions = $this->get_field_type_options();
         ?>
         <table class="widefat malifo-fields-table">
@@ -193,9 +182,8 @@ final class MALIFO_Admin
                     <th><?php echo esc_html($labelFieldKey); ?></th>
                     <th><?php echo esc_html($labelLabel); ?></th>
                     <th><?php echo esc_html($labelValue); ?></th>
-                    <th><?php echo esc_html($labelPlaceholderSetting); ?></th>
-                    <th><?php echo esc_html($labelOptions); ?></th>
-                    <th><?php echo esc_html($labelTemplate); ?></th>
+                    <th><?php echo esc_html($labelRequired); ?></th>
+                    <th><?php echo esc_html($labelPlaceholder); ?></th>
                     <th><?php echo esc_html($labelAction); ?></th>
                 </tr>
             </thead>
@@ -292,37 +280,37 @@ final class MALIFO_Admin
         $keysInput = filter_input(INPUT_POST, 'malifo_field_key', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
         $labelsInput = filter_input(INPUT_POST, 'malifo_field_label', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
         $valuesInput = filter_input(INPUT_POST, 'malifo_field_value', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
-        $placeholdersInput = filter_input(INPUT_POST, 'malifo_field_placeholder', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
+        $requiredInput = filter_input(INPUT_POST, 'malifo_field_required', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
         $optionsInput = filter_input(INPUT_POST, 'malifo_field_options', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
 
         $types = is_array($typesInput) ? array_map('wp_unslash', $typesInput) : [];
         $keys = is_array($keysInput) ? array_map('wp_unslash', $keysInput) : [];
         $labels = is_array($labelsInput) ? array_map('wp_unslash', $labelsInput) : [];
         $values = is_array($valuesInput) ? array_map('wp_unslash', $valuesInput) : [];
-        $placeholders = is_array($placeholdersInput) ? array_map('wp_unslash', $placeholdersInput) : [];
+        $requiredFlags = is_array($requiredInput) ? array_map('wp_unslash', $requiredInput) : [];
         $optionsList = is_array($optionsInput) ? array_map('wp_unslash', $optionsInput) : [];
 
         $fields = [];
         $seenKeys = [];
-        $count = max(count($types), count($keys), count($labels), count($values), count($placeholders), count($optionsList));
+        $count = max(count($types), count($keys), count($labels), count($values), count($requiredFlags), count($optionsList));
 
         for ($i = 0; $i < $count; $i++) {
             $rawType = isset($types[$i]) ? (string) $types[$i] : 'select';
             $rawKey = isset($keys[$i]) ? (string) $keys[$i] : '';
             $rawLabel = isset($labels[$i]) ? (string) $labels[$i] : '';
             $rawValue = isset($values[$i]) ? (string) $values[$i] : '';
-            $rawPlaceholder = isset($placeholders[$i]) ? (string) $placeholders[$i] : '';
+            $rawRequired = isset($requiredFlags[$i]) ? (string) $requiredFlags[$i] : '0';
             $rawOptions = isset($optionsList[$i]) ? (string) $optionsList[$i] : '';
 
-            if (trim($rawKey) === '' && trim($rawLabel) === '' && trim($rawValue) === '' && trim($rawPlaceholder) === '' && trim($rawOptions) === '') {
+            if (trim($rawKey) === '' && trim($rawLabel) === '' && trim($rawValue) === '' && trim($rawOptions) === '') {
                 continue;
             }
 
             $type = mailto_link_form_get_field_type(['type' => $rawType]);
             $key = trim($rawKey) === '' ? '' : mailto_link_form_normalize_field_key($rawKey);
             $label = sanitize_text_field($rawLabel);
+            $required = $rawRequired === '1';
             $value = '';
-            $placeholder = '';
             $options = [];
 
             if ($type === 'select') {
@@ -333,12 +321,6 @@ final class MALIFO_Admin
                         $options[] = $clean;
                     }
                 }
-            } elseif ($type === 'textarea') {
-                $value = sanitize_textarea_field($rawValue);
-                $placeholder = sanitize_text_field($rawPlaceholder);
-            } elseif ($type === 'text') {
-                $value = sanitize_text_field($rawValue);
-                $placeholder = sanitize_text_field($rawPlaceholder);
             } else {
                 $value = sanitize_text_field($rawValue);
             }
@@ -361,9 +343,8 @@ final class MALIFO_Admin
                 'key' => $key,
                 'label' => $label,
                 'value' => $value,
-                'placeholder' => $placeholder,
                 'options' => array_values(array_unique($options)),
-                'required' => false,
+                'required' => $required,
             ]);
         }
 
@@ -509,7 +490,6 @@ final class MALIFO_Admin
             'key' => '',
             'label' => '',
             'value' => '',
-            'placeholder' => '',
             'options' => [],
             'required' => false,
         ]);
@@ -518,6 +498,39 @@ final class MALIFO_Admin
     private function build_placeholder(string $key): string
     {
         return mailto_link_form_build_template_token($key);
+    }
+
+    /**
+     * @return array<string, array<string, string>>
+     */
+    private function get_field_examples(): array
+    {
+        return [
+            'key' => [
+                'select' => mailto_link_form_i18n('(e.g.) inquiry_type', '（例）問い合わせ種別'),
+                'textarea' => mailto_link_form_i18n('(e.g.) inquiry_message', '（例）問い合わせ内容'),
+                'text' => mailto_link_form_i18n('(e.g.) inquiry_message', '（例）問い合わせ内容'),
+                'checkbox' => mailto_link_form_i18n('(e.g.) agree_to_privacy_policy', '（例）弊社プライバシーポリシーに同意する'),
+            ],
+            'label' => [
+                'select' => mailto_link_form_i18n('(e.g.) Inquiry Type', '（例）問い合わせ種別'),
+                'textarea' => mailto_link_form_i18n('(e.g.) Inquiry Message', '（例）問い合わせ内容'),
+                'text' => mailto_link_form_i18n('(e.g.) Inquiry Message', '（例）問い合わせ内容'),
+                'checkbox' => mailto_link_form_i18n('(e.g.) I agree to the privacy policy', '（例）弊社プライバシーポリシーに同意する'),
+            ],
+            'value' => [
+                'select' => '',
+                'textarea' => mailto_link_form_i18n('(Please write here)', '（こちらにご記入ください）'),
+                'text' => mailto_link_form_i18n('(Please write here)', '（こちらにご記入ください）'),
+                'checkbox' => mailto_link_form_i18n('Agree', '同意する'),
+            ],
+            'options' => [
+                'select' => mailto_link_form_i18n('(e.g.) Press Inquiry, Careers, Other', '（例）取材について, 求人について, その他'),
+                'textarea' => '',
+                'text' => '',
+                'checkbox' => '',
+            ],
+        ];
     }
 
     /**
@@ -548,7 +561,7 @@ final class MALIFO_Admin
     /**
      * @param array<string, mixed> $field
      * @param array<string, string> $labels
-     * @param array<string, string> $examples
+     * @param array<string, array<string, string>> $examples
      * @param array<string, string> $typeOptions
      */
     private function render_field_row(array $field, array $labels, array $examples, array $typeOptions): void
@@ -556,6 +569,7 @@ final class MALIFO_Admin
         $field = mailto_link_form_normalize_field($field);
         $type = (string) $field['type'];
         $optionsValue = implode(', ', (array) $field['options']);
+        $required = !empty($field['required']);
         ?>
         <tr class="malifo-field-row" data-field-type="<?php echo esc_attr($type); ?>">
             <td class="malifo-field-cell malifo-field-cell--type" data-label="<?php echo esc_attr($labels['type']); ?>">
@@ -566,21 +580,28 @@ final class MALIFO_Admin
                 </select>
             </td>
             <td class="malifo-field-cell malifo-field-cell--key" data-label="<?php echo esc_attr($labels['key']); ?>">
-                <input type="text" name="malifo_field_key[]" class="malifo-field-key" value="<?php echo esc_attr((string) $field['key']); ?>" placeholder="<?php echo esc_attr($examples['key']); ?>" />
+                <input type="text" name="malifo_field_key[]" class="malifo-field-key" value="<?php echo esc_attr((string) $field['key']); ?>" placeholder="<?php echo esc_attr($examples['key'][$type] ?? ''); ?>"<?php echo $this->build_example_attributes($examples['key']); ?> />
             </td>
             <td class="malifo-field-cell malifo-field-cell--label" data-label="<?php echo esc_attr($labels['label']); ?>">
-                <input type="text" name="malifo_field_label[]" class="malifo-field-label" value="<?php echo esc_attr((string) $field['label']); ?>" placeholder="<?php echo esc_attr($examples['label']); ?>" />
+                <input type="text" name="malifo_field_label[]" class="malifo-field-label" value="<?php echo esc_attr((string) $field['label']); ?>" placeholder="<?php echo esc_attr($examples['label'][$type] ?? ''); ?>"<?php echo $this->build_example_attributes($examples['label']); ?> />
             </td>
-            <td class="malifo-field-cell malifo-field-cell--value" data-label="<?php echo esc_attr($labels['value']); ?>">
-                <textarea name="malifo_field_value[]" class="malifo-field-value" rows="2" placeholder="<?php echo esc_attr($examples['value']); ?>"><?php echo esc_textarea((string) $field['value']); ?></textarea>
+            <td class="malifo-field-cell malifo-field-cell--content" data-label="<?php echo esc_attr($labels['value']); ?>">
+                <div class="malifo-field-content-variant malifo-field-content-variant--value">
+                    <input type="text" name="malifo_field_value[]" class="malifo-field-value" value="<?php echo esc_attr((string) $field['value']); ?>" placeholder="<?php echo esc_attr($examples['value'][$type] ?? ''); ?>"<?php echo $this->build_example_attributes($examples['value']); ?> />
+                </div>
+                <div class="malifo-field-content-variant malifo-field-content-variant--options">
+                    <input type="text" name="malifo_field_options[]" class="malifo-field-options" value="<?php echo esc_attr($optionsValue); ?>" placeholder="<?php echo esc_attr($examples['options'][$type] ?? ''); ?>"<?php echo $this->build_example_attributes($examples['options']); ?> />
+                    <small class="malifo-field-options-note"><?php echo esc_html($labels['options_note']); ?></small>
+                </div>
             </td>
-            <td class="malifo-field-cell malifo-field-cell--placeholder-setting" data-label="<?php echo esc_attr($labels['placeholder']); ?>">
-                <input type="text" name="malifo_field_placeholder[]" class="malifo-field-placeholder" value="<?php echo esc_attr((string) $field['placeholder']); ?>" placeholder="<?php echo esc_attr($examples['placeholder']); ?>" />
+            <td class="malifo-field-cell malifo-field-cell--required" data-label="<?php echo esc_attr($labels['required']); ?>">
+                <input type="hidden" name="malifo_field_required[]" class="malifo-field-required-value" value="<?php echo $required ? '1' : '0'; ?>" />
+                <label class="malifo-required-toggle">
+                    <input type="checkbox" class="malifo-field-required-toggle" value="1" <?php checked($required); ?> />
+                    <span><?php echo esc_html(mailto_link_form_i18n('Required', '必須')); ?></span>
+                </label>
             </td>
-            <td class="malifo-field-cell malifo-field-cell--options" data-label="<?php echo esc_attr($labels['options']); ?>">
-                <input type="text" name="malifo_field_options[]" class="malifo-field-options" value="<?php echo esc_attr($optionsValue); ?>" placeholder="<?php echo esc_attr($examples['options']); ?>" />
-            </td>
-            <td class="malifo-field-cell malifo-field-cell--template malifo-placeholder-cell" data-label="<?php echo esc_attr($labels['template']); ?>">
+            <td class="malifo-field-cell malifo-field-cell--placeholder malifo-placeholder-cell" data-label="<?php echo esc_attr($labels['placeholder']); ?>">
                 <input type="text" class="malifo-placeholder-value" readonly value="<?php echo esc_attr($this->build_placeholder((string) $field['key'])); ?>" onclick="this.select();" />
             </td>
             <td class="malifo-field-cell malifo-field-cell--action" data-label="<?php echo esc_attr($labels['action']); ?>">
@@ -588,6 +609,24 @@ final class MALIFO_Admin
             </td>
         </tr>
         <?php
+    }
+
+    /**
+     * @param array<string, string> $values
+     */
+    private function build_example_attributes(array $values): string
+    {
+        $attributes = '';
+
+        foreach ($values as $type => $value) {
+            $attributes .= sprintf(
+                ' data-example-%s="%s"',
+                esc_attr($type),
+                esc_attr($value)
+            );
+        }
+
+        return $attributes;
     }
 
     private function set_admin_error(string $message): void
