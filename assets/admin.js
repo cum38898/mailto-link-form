@@ -1,65 +1,11 @@
 (function () {
-  function isWithin(codePoint, start, end) {
-    return codePoint >= start && codePoint <= end;
-  }
-
-  function hasCaseVariant(character) {
-    return character.toLowerCase() !== character.toUpperCase();
-  }
-
-  function isAllowedFieldChar(character) {
-    if (character === "_" || character === "-") {
-      return true;
-    }
-
-    if (/\s/.test(character)) {
-      return false;
-    }
-
-    if (/[!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~、。・「」『』【】（）［］｛｝〈〉《》〔〕！？：；，．…]/.test(character)) {
-      return false;
-    }
-
-    var normalized = typeof character.normalize === "function" ? character.normalize("NFKC") : character;
-    if (/^[A-Za-z0-9]$/.test(normalized)) {
-      return true;
-    }
-
-    if (hasCaseVariant(character) || hasCaseVariant(normalized)) {
-      return true;
-    }
-
-    var codePoint = character.codePointAt(0);
-
-    return (
-      isWithin(codePoint, 0x00c0, 0x024f) ||
-      isWithin(codePoint, 0x1e00, 0x1eff) ||
-      isWithin(codePoint, 0x3040, 0x309f) ||
-      codePoint === 0x3005 ||
-      codePoint === 0x3006 ||
-      codePoint === 0x303b ||
-      isWithin(codePoint, 0x30a0, 0x30ff) ||
-      isWithin(codePoint, 0x31f0, 0x31ff) ||
-      isWithin(codePoint, 0x3400, 0x4dbf) ||
-      isWithin(codePoint, 0x4e00, 0x9fff) ||
-      isWithin(codePoint, 0xf900, 0xfaff) ||
-      isWithin(codePoint, 0xac00, 0xd7af) ||
-      isWithin(codePoint, 0xff10, 0xff19) ||
-      isWithin(codePoint, 0xff21, 0xff3a) ||
-      isWithin(codePoint, 0xff41, 0xff5a) ||
-      isWithin(codePoint, 0xff66, 0xff9f)
-    );
-  }
-
   function normalizeFieldKey(value) {
-    var input = String(value || "").trim().replace(/[{}]+/g, "");
-    var normalized = "";
-
-    Array.from(input).forEach(function (character) {
-      normalized += isAllowedFieldChar(character) ? character : "_";
-    });
-
-    return normalized.replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+    return String(value || "")
+      .trim()
+      .replace(/[{}]+/gu, "")
+      .replace(/[^\p{L}\p{N}_-]+/gu, "_")
+      .replace(/_+/gu, "_")
+      .replace(/^_+|_+$/gu, "");
   }
 
   function getRowType(row) {

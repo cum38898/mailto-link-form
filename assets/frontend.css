@@ -12,7 +12,8 @@
 
 .malifo-frontend-form .malifo-form-row,
 .malifo-frontend-form .malifo-actions,
-.malifo-frontend-form .malifo-help-text {
+.malifo-frontend-form .malifo-help-text,
+.malifo-frontend-form .malifo-error-message {
   margin: 0 0 0.75em;
 }
 
@@ -81,6 +82,14 @@
 }
 
 .malifo-frontend-form .malifo-help-text {
+  font-size: 0.875em;
+  text-align: center;
+}
+
+.malifo-frontend-form .malifo-error-message {
+  width: min(100%, 48ch);
+  box-sizing: border-box;
+  margin-inline: auto;
   font-size: 0.875em;
   text-align: center;
 }

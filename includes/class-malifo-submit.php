@@ -22,17 +22,17 @@ final class MALIFO_Submit
         $redirectTo = isset($_POST['redirect_to']) ? esc_url_raw((string) wp_unslash($_POST['redirect_to'])) : home_url('/');
 
         if ($formId <= 0) {
-            $this->redirect_with_error($redirectTo, 'invalid_form');
+            $this->redirect_with_error($redirectTo, 'invalid_form', $formId);
         }
 
         $nonce = isset($_POST['malifo_nonce']) ? sanitize_text_field(wp_unslash((string) $_POST['malifo_nonce'])) : '';
         if ($nonce === '' || !wp_verify_nonce($nonce, 'malifo_submit_' . $formId)) {
-            $this->redirect_with_error($redirectTo, 'invalid_nonce');
+            $this->redirect_with_error($redirectTo, 'invalid_nonce', $formId);
         }
 
         $post = get_post($formId);
         if (!$post || $post->post_type !== self::POST_TYPE) {
-            $this->redirect_with_error($redirectTo, 'missing_form');
+            $this->redirect_with_error($redirectTo, 'missing_form', $formId);
         }
 
         $recipient = (string) get_post_meta($formId, self::META_RECIPIENT, true);
@@ -41,7 +41,7 @@ final class MALIFO_Submit
         $fields = array_values(array_filter($this->get_fields($formId), 'mailto_link_form_is_complete_field'));
 
         if (!is_email($recipient)) {
-            $this->redirect_with_error($redirectTo, 'invalid_settings');
+            $this->redirect_with_error($redirectTo, 'invalid_settings', $formId);
         }
 
         $values = [];
@@ -62,11 +62,11 @@ final class MALIFO_Submit
                 $selected = isset($_POST[$inputName]) ? sanitize_text_field((string) wp_unslash($_POST[$inputName])) : '';
 
                 if ($required && $selected === '') {
-                    $this->redirect_with_error($redirectTo, 'required_option');
+                    $this->redirect_with_error($redirectTo, 'required_option', $formId);
                 }
 
                 if ($selected !== '' && !in_array($selected, $options, true)) {
-                    $this->redirect_with_error($redirectTo, 'invalid_option');
+                    $this->redirect_with_error($redirectTo, 'invalid_option', $formId);
                 }
 
                 $values[$key] = $selected;
@@ -76,7 +76,7 @@ final class MALIFO_Submit
             if ($type === 'textarea') {
                 $values[$key] = isset($_POST[$inputName]) ? sanitize_textarea_field((string) wp_unslash($_POST[$inputName])) : '';
                 if ($required && $values[$key] === '') {
-                    $this->redirect_with_error($redirectTo, 'required_field');
+                    $this->redirect_with_error($redirectTo, 'required_field', $formId);
                 }
                 continue;
             }
@@ -84,7 +84,7 @@ final class MALIFO_Submit
             if ($type === 'text') {
                 $values[$key] = isset($_POST[$inputName]) ? sanitize_text_field((string) wp_unslash($_POST[$inputName])) : '';
                 if ($required && $values[$key] === '') {
-                    $this->redirect_with_error($redirectTo, 'required_field');
+                    $this->redirect_with_error($redirectTo, 'required_field', $formId);
                 }
                 continue;
             }
@@ -92,7 +92,7 @@ final class MALIFO_Submit
             if ($type === 'checkbox') {
                 $values[$key] = isset($_POST[$inputName]) ? $fieldValue : '';
                 if ($required && $values[$key] === '') {
-                    $this->redirect_with_error($redirectTo, 'required_field');
+                    $this->redirect_with_error($redirectTo, 'required_field', $formId);
                 }
             }
         }
@@ -140,9 +140,15 @@ final class MALIFO_Submit
         return array_map('mailto_link_form_normalize_field', $decoded);
     }
 
-    private function redirect_with_error(string $redirectTo, string $code): void
+    private function redirect_with_error(string $redirectTo, string $code, int $formId): void
     {
-        $target = add_query_arg('malifo_error', $code, $redirectTo);
+        $target = add_query_arg(
+            [
+                'malifo_error' => $code,
+                'malifo_error_form' => $formId,
+            ],
+            $redirectTo
+        );
         wp_safe_redirect($target);
         exit;
     }

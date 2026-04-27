@@ -73,17 +73,24 @@ final class MALIFO_Shortcode
         if ($helpText === '') {
             $helpText = mailto_link_form_i18n('Opening your email app.', 'メールアプリを開いています');
         }
+        $errorMessage = $this->get_error_message($formId);
 
         wp_enqueue_style('mailto-link-form-frontend');
         wp_enqueue_script('mailto-link-form-frontend');
 
         ob_start();
         ?>
-        <form class="malifo-frontend-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" target="_blank">
+        <form class="malifo-frontend-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
             <input type="hidden" name="action" value="mailto_link_form_submit" />
             <input type="hidden" name="form_id" value="<?php echo esc_attr((string) $formId); ?>" />
             <input type="hidden" name="redirect_to" value="<?php echo esc_url((string) get_permalink()); ?>" />
             <?php wp_nonce_field('malifo_submit_' . $formId, 'malifo_nonce'); ?>
+
+            <?php if ($errorMessage !== '') : ?>
+                <p class="malifo-error-message" role="alert" aria-live="assertive">
+                    <?php echo esc_html($errorMessage); ?>
+                </p>
+            <?php endif; ?>
 
             <?php foreach ($renderableFields as $field) : ?>
                 <?php
@@ -152,5 +159,37 @@ final class MALIFO_Shortcode
         }
 
         return array_map('mailto_link_form_normalize_field', $decoded);
+    }
+
+    private function get_error_message(int $formId): string
+    {
+        $errorForm = isset($_GET['malifo_error_form']) ? absint((string) wp_unslash($_GET['malifo_error_form'])) : 0;
+        if ($errorForm !== $formId) {
+            return '';
+        }
+
+        $errorCode = isset($_GET['malifo_error']) ? sanitize_key((string) wp_unslash($_GET['malifo_error'])) : '';
+        if ($errorCode === '') {
+            return '';
+        }
+
+        if ($errorCode === 'required_field' || $errorCode === 'required_option') {
+            return mailto_link_form_i18n(
+                'Please fill in the required fields.',
+                '必須項目を入力してください。'
+            );
+        }
+
+        if ($errorCode === 'invalid_option') {
+            return mailto_link_form_i18n(
+                'An invalid option was selected.',
+                '無効な選択肢です。'
+            );
+        }
+
+        return mailto_link_form_i18n(
+            'Failed to submit. Please try again later.',
+            '送信に失敗しました。時間をおいて再度お試しください。'
+        );
     }
 }
